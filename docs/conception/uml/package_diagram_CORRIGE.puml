@@ -1,0 +1,32 @@
+@startuml
+package "Frontend" {
+  [Pages]
+  [Components]
+  [Services]
+  [Hooks]
+}
+
+package "Backend" {
+  [Authentication]
+  [Transactions]
+  [Alerts]
+  [Dashboard]
+  [Fraud Detection]
+  [Audit]
+  [Reports]
+}
+
+package "MachineLearning" {
+  [Training]
+  [Prediction]
+  [Preprocessing]
+}
+
+database "PostgreSQL"
+
+Frontend --> Backend
+Backend --> PostgreSQL
+Backend --> MachineLearning
+[Fraud Detection] --> [Alerts] : score > seuil
+[Authentication] --> [Audit] : journalisation
+@enduml

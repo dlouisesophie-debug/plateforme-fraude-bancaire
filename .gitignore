@@ -1,0 +1,33 @@
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+env/
+db.sqlite3
+staticfiles/
+media/
+
+# React
+node_modules/
+frontend/build/
+frontend/.env
+
+# ML
+ml/data/raw/*
+!ml/data/raw/.gitkeep
+ml/data/processed/*
+!ml/data/processed/.gitkeep
+ml/models/*.joblib
+ml/models/*.pkl
+!ml/models/.gitkeep
+.ipynb_checkpoints/
+
+# Docker
+*.log
+
+# Général
+.DS_Store
+.vscode/
+.idea/

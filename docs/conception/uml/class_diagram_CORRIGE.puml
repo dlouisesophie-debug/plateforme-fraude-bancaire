@@ -1,0 +1,73 @@
+@startuml
+class User {
+  id:int
+  first_name:string
+  last_name:string
+  email:string
+  password:string
+  role:string
+  login()
+  logout()
+}
+
+class Transaction {
+  id:int
+  transaction_id:string
+  amount:decimal
+  merchant:string
+  device:string
+  location:string
+  timestamp:datetime
+  status:string
+}
+
+class Prediction {
+  id:int
+  fraud_probability:float
+  prediction:boolean
+  prediction_date:datetime
+}
+
+class Alert {
+  id:int
+  status:string
+  severity:string
+  created_at:datetime
+  resolved_at:datetime
+  comment:string
+}
+
+class MLModel {
+  id:int
+  version:string
+  algorithm:string
+  precision:float
+  recall:float
+  f1_score:float
+  auc_roc:float
+  trained_at:datetime
+  is_active:boolean
+}
+
+class Report {
+  id:int
+  title:string
+  type:string
+  created_at:datetime
+}
+
+class AuditLog {
+  id:int
+  action:string
+  ip_address:string
+  created_at:datetime
+}
+
+User "1" -- "0..*" Transaction : saisit >
+Transaction "1" -- "1" Prediction : génère >
+Prediction "1" -- "0..1" Alert : déclenche >
+Alert "0..*" -- "1" User : traitée par >
+Prediction "0..*" -- "1" MLModel : produite par >
+User "1" -- "0..*" Report
+User "1" -- "0..*" AuditLog
+@enduml

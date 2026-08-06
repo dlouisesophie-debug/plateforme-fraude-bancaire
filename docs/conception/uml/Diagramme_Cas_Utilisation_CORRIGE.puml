@@ -1,0 +1,50 @@
+@startuml
+left to right direction
+
+actor "Administrateur" as Admin
+actor "Analyste Fraude" as Analyst
+actor "Agent Financier" as Agent
+actor "Système ML" as ML <<secondary>>
+
+rectangle "Plateforme de Détection de Fraude Bancaire" {
+  usecase "Se connecter\n(JWT)" as UC1
+  usecase "Gérer les utilisateurs\net les rôles" as UC2
+  usecase "Superviser les\nmodèles ML" as UC3
+  usecase "Consulter tous\nles rapports" as UC4
+
+  usecase "Consulter les alertes" as UC5
+  usecase "Examiner une transaction\nscorée" as UC6
+  usecase "Statuer sur une fraude\n(confirmer/rejeter)" as UC7
+  usecase "Annoter une transaction" as UC8
+
+  usecase "Saisir/consulter\nune transaction" as UC9
+  usecase "Consulter l'historique\ndes transactions" as UC10
+  usecase "Exporter des rapports" as UC11
+
+  usecase "Scorer une transaction" as UC12
+  usecase "Déclencher une alerte" as UC13
+}
+
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+
+Analyst --> UC1
+Analyst --> UC5
+Analyst --> UC6
+Analyst --> UC7
+Analyst --> UC8
+
+Agent --> UC1
+Agent --> UC9
+Agent --> UC10
+Agent --> UC11
+
+ML --> UC12
+ML --> UC13
+
+UC9 ..> UC12 : <<include>>
+UC12 ..> UC13 : <<extend>>\n(si score > seuil)
+UC13 ..> UC5 : <<include>>
+@enduml
