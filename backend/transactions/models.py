@@ -6,6 +6,28 @@ from django.conf import settings
 from django.db import models
 
 
+class Customer(models.Model):
+    class Gender(models.TextChoices):
+        FEMALE = "F", "Femme"
+        MALE = "M", "Homme"
+
+    full_name = models.CharField(max_length=255, blank=True)
+    gender = models.CharField(max_length=1, choices=Gender.choices)
+    date_of_birth = models.DateField()
+    city = models.CharField(max_length=100)
+    region = models.CharField(max_length=100)
+    city_population = models.IntegerField(null=True, blank=True)
+    profession = models.CharField(max_length=255, blank=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+
+    class Meta:
+        db_table = "customers"
+
+    def __str__(self):
+        return self.full_name or f"Customer #{self.pk}"
+
+
 class Transaction(models.Model):
     class Channel(models.TextChoices):
         CARD = "card", "Carte"
@@ -22,6 +44,10 @@ class Transaction(models.Model):
     transaction_id = models.CharField(max_length=50, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     merchant = models.CharField(max_length=255, blank=True)
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="transactions", null=True, blank=True)
+    merchant_latitude = models.FloatField(null=True, blank=True)
+    merchant_longitude = models.FloatField(null=True, blank=True)
+    category = models.CharField(max_length=100, blank=True)
     device = models.CharField(max_length=100, blank=True)
     location = models.CharField(max_length=255, blank=True)
     channel = models.CharField(max_length=30, choices=Channel.choices)

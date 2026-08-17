@@ -1,0 +1,78 @@
+Collecting Django==5.0.6 (from -r requirements.txt (line 1))
+  Using cached Django-5.0.6-py3-none-any.whl.metadata (4.1 kB)
+Collecting djangorestframework==3.15.1 (from -r requirements.txt (line 2))
+  Using cached djangorestframework-3.15.1-py3-none-any.whl.metadata (11 kB)
+Collecting djangorestframework-simplejwt==5.3.1 (from -r requirements.txt (line 3))
+  Using cached djangorestframework_simplejwt-5.3.1-py3-none-any.whl.metadata (4.3 kB)
+Collecting psycopg2-binary==2.9.9 (from -r requirements.txt (line 4))
+  Using cached psycopg2-binary-2.9.9.tar.gz (384 kB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting django-cors-headers==4.3.1 (from -r requirements.txt (line 5))
+  Using cached django_cors_headers-4.3.1-py3-none-any.whl.metadata (16 kB)
+Collecting drf-spectacular==0.27.2 (from -r requirements.txt (line 6))
+  Using cached drf_spectacular-0.27.2-py3-none-any.whl.metadata (14 kB)
+Collecting python-dotenv==1.0.1 (from -r requirements.txt (line 7))
+  Using cached python_dotenv-1.0.1-py3-none-any.whl.metadata (23 kB)
+Collecting pandas==2.2.2 (from -r requirements.txt (line 8))
+  Using cached pandas-2.2.2.tar.gz (4.4 MB)
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'error'
+  error: subprocess-exited-with-error
+  
+  pip subprocess to install build dependencies did not run successfully.
+  exit code: 1
+  
+  [34 lines of output]
+  Collecting meson-python==0.13.1
+    Using cached meson_python-0.13.1-py3-none-any.whl.metadata (4.1 kB)
+  Collecting meson==1.2.1
+    Using cached meson-1.2.1-py3-none-any.whl.metadata (1.7 kB)
+  Collecting wheel
+    Using cached wheel-0.47.0-py3-none-any.whl.metadata (2.3 kB)
+  Collecting Cython==3.0.5
+    Using cached Cython-3.0.5-py2.py3-none-any.whl.metadata (3.2 kB)
+  Collecting numpy>=2.0.0rc1
+    Using cached numpy-2.5.1-cp313-cp313-win_amd64.whl.metadata (6.6 kB)
+  Collecting versioneer[toml]
+    Using cached versioneer-0.29-py3-none-any.whl.metadata (16 kB)
+  Collecting colorama (from meson-python==0.13.1)
+    Using cached colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+  Collecting pyproject-metadata>=0.7.1 (from meson-python==0.13.1)
+    Using cached pyproject_metadata-0.12.1-py3-none-any.whl.metadata (6.5 kB)
+  Collecting setuptools>=60.0 (from meson-python==0.13.1)
+    Using cached setuptools-83.0.0-py3-none-any.whl.metadata (6.6 kB)
+  Collecting packaging>=24.0 (from wheel)
+    Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+  Using cached meson_python-0.13.1-py3-none-any.whl (79 kB)
+  Using cached meson-1.2.1-py3-none-any.whl (962 kB)
+  Using cached Cython-3.0.5-py2.py3-none-any.whl (1.2 MB)
+  Using cached wheel-0.47.0-py3-none-any.whl (32 kB)
+  Using cached numpy-2.5.1-cp313-cp313-win_amd64.whl (12.4 MB)
+  Using cached versioneer-0.29-py3-none-any.whl (46 kB)
+  Using cached packaging-26.3-py3-none-any.whl (129 kB)
+  Using cached pyproject_metadata-0.12.1-py3-none-any.whl (23 kB)
+  Using cached setuptools-83.0.0-py3-none-any.whl (1.0 MB)
+  Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+  Installing collected packages: versioneer, setuptools, packaging, numpy, meson, Cython, colorama, wheel, pyproject-metadata, meson-python
+  ERROR: Could not install packages due to an OSError: [Errno 28] No space left on device: 'C:\\Users\\lenovo\\AppData\\Local\\Temp\\pip-build-env-utfpwbll\\overlay\\Lib\\site-packages\\numpy.libs\\msvcp140-a4c2229bdc2a2a630acdc095b4d86008.dll'
+  
+  
+  [end of output]
+  
+  note: This error originates from a subprocess, and is likely not a problem with pip.
+
+[notice] A new release of pip is available: 25.2 -> 26.2.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+error: subprocess-exited-with-error
+
+pip subprocess to install build dependencies did not run successfully.
+exit code: 1
+
+See above for output.
+
+note: This error originates from a subprocess, and is likely not a problem with pip.

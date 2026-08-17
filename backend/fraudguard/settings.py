@@ -134,3 +134,6 @@ CORS_ALLOWED_ORIGINS = [
 
 # --- Regle metier CDC 5.3 ---
 FRAUD_ALERT_THRESHOLD = float(os.getenv("FRAUD_ALERT_THRESHOLD", "0.7"))
+# --- Configuration ML (FraudGuard) ---
+ML_MODELS_DIR = os.path.join(BASE_DIR.parent, "ml", "models")
+ML_ACTIVE_MODEL_FILE = os.getenv("ML_ACTIVE_MODEL_FILE", "fraudguard_pipeline.joblib")
