@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import api from "../services/api";
+import api, { mockApi, USE_MOCKS_FLAG } from "../services/api";
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -7,7 +7,10 @@ export function useAuth() {
   );
 
   const login = useCallback(async (username, password) => {
-    const { data } = await api.post("/auth/login/", { username, password });
+    const data = USE_MOCKS_FLAG
+      ? await mockApi.login(username, password)
+      : (await api.post("/auth/login/", { username, password })).data;
+
     localStorage.setItem("access_token", data.access);
     localStorage.setItem("refresh_token", data.refresh);
     setIsAuthenticated(true);

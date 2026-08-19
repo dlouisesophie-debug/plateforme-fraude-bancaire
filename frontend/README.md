@@ -13,13 +13,33 @@ src/
 └── hooks/         Hooks personnalises (ex. useAuth deja fourni)
 ```
 
-## Demarrage local (sans Docker)
+## Demarrage local (sans Docker) — fonctionne SANS backend
 
 ```bash
 npm install
 cp .env.example .env
 npm start
 ```
+
+`.env` contient `REACT_APP_USE_MOCKS=true` par defaut : l'app tourne
+entierement sur des donnees mockees (`src/mocks/mockData.js`), pas besoin
+que le backend soit pret. Login accepte n'importe quels identifiants en
+mode mock.
+
+## Passer au vrai backend
+
+Des que l'API Django tourne (`docker compose up` a la racine, ou
+`python manage.py runserver` dans `backend/`) :
+
+1. Dans `.env`, mettre `REACT_APP_USE_MOCKS=false`
+2. Redemarrer `npm start`
+
+Aucune modification de composant necessaire : chaque page (Dashboard,
+Transactions, Alerts) bascule automatiquement sur `api.get(...)` au lieu
+de `mockApi...`. Si un appel echoue, verifiez que le nom des champs
+renvoyes par le serializer Django correspond exactement a
+`src/mocks/mockData.js` — c'est la source de verite du contrat d'API
+pendant que le backend n'est pas branche.
 
 ## Demarrage avec Docker (coordonner avec Etudiant 4)
 

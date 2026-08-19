@@ -1,0 +1,75 @@
+/**
+ * Design tokens FraudGuard — issus des maquettes (voir docs/maquettes/).
+ * Importe une seule fois dans index.js.
+ */
+
+:root {
+  /* Couleurs */
+  --navy-950: #0d1b33;
+  --navy-900: #142a4d;
+  --navy-800: #1d3a66;
+
+  --canvas: #f5f7fb;
+  --surface: #ffffff;
+  --border: #e3e7ef;
+
+  --text-primary: #101828;
+  --text-secondary: #5b6472;
+  --text-inverse: #e8edf7;
+
+  --brand: #2f6fed;
+  --brand-soft: #eaf0fe;
+
+  --danger: #d64545;
+  --danger-soft: #fbeaea;
+
+  --warning: #e8a33d;
+  --warning-soft: #fdf3e3;
+
+  --success: #2fa36b;
+  --success-soft: #e9f6ef;
+
+  /* Typographie */
+  --font-ui: "Inter", sans-serif;
+  --font-display: "Fraunces", serif;
+}
+
+body {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--canvas);
+}
+
+/* Classes utilitaires partagees entre pages */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.status-badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.status-badge.legitimate { background: var(--success-soft); color: var(--success); }
+.status-badge.fraudulent { background: var(--danger-soft); color: var(--danger); }
+.status-badge.under_review { background: var(--warning-soft); color: #b5780f; }
+.status-badge.pending { background: var(--canvas); color: var(--text-secondary); }
+
+.severity-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.severity-badge.critical { background: var(--danger-soft); color: var(--danger); }
+.severity-badge.high { background: var(--warning-soft); color: #b5780f; }
+.severity-badge.medium { background: var(--brand-soft); color: var(--brand); }
+.severity-badge.low { background: var(--canvas); color: var(--text-secondary); }
