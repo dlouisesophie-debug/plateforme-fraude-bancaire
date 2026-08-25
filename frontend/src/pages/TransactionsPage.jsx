@@ -6,6 +6,12 @@ import { mockUser } from "../mocks/mockData";
 
 const CHANNEL_LABELS = { card: "Carte", mobile_money: "Mobile Money", transfer: "Virement", online: "En ligne" };
 const STATUS_LABELS = { legitimate: "Légitime", fraudulent: "Frauduleuse", under_review: "En examen", pending: "En attente" };
+const STATUS_CLASSES = {
+  legitimate: "bg-success-soft text-success",
+  fraudulent: "bg-danger-soft text-danger",
+  under_review: "bg-warning-soft text-[#B5780F]",
+  pending: "bg-canvas text-ink-secondary",
+};
 
 function formatAmount(amount) {
   return new Intl.NumberFormat("fr-FR").format(Math.round(parseFloat(amount))) + " F";
@@ -31,22 +37,22 @@ export default function TransactionsPage() {
   }, []);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div className="flex">
       <Sidebar user={user} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Transactions">
-          <button style={{ padding: "10px 16px", border: "none", borderRadius: 9, background: "var(--brand)", color: "#fff", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>
+          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-[9px] bg-brand text-white text-[13px] font-semibold">
             <i className="ti ti-plus" /> Saisir une transaction
           </button>
         </Topbar>
 
-        <div style={{ padding: 28 }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <div className="p-7">
+          <div className="bg-surface border border-line rounded-xl overflow-hidden">
+            <table className="w-full border-collapse text-[13px]">
               <thead>
-                <tr style={{ background: "var(--canvas)" }}>
+                <tr className="bg-canvas">
                   {["ID Transaction", "Montant", "Marchand", "Canal", "Date", "Statut"].map((h) => (
-                    <th key={h} style={{ textAlign: "left", padding: "13px 22px", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-secondary)", borderBottom: "1px solid var(--border)" }}>
+                    <th key={h} className="text-left px-5 py-3.5 text-[11px] uppercase tracking-wide text-ink-secondary border-b border-line">
                       {h}
                     </th>
                   ))}
@@ -54,18 +60,19 @@ export default function TransactionsPage() {
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={6} style={{ padding: 22, color: "var(--text-secondary)" }}>Chargement...</td></tr>
+                  <tr><td colSpan={6} className="p-5 text-ink-secondary">Chargement...</td></tr>
                 )}
                 {!loading && transactions.map((t) => (
                   <tr key={t.id}>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)", fontWeight: 600, color: "var(--brand)" }}>#{t.transaction_id}</td>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)", fontWeight: 600 }}>{formatAmount(t.amount)}</td>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)" }}>{t.merchant}</td>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)", color: "var(--text-secondary)" }}>{CHANNEL_LABELS[t.channel] || t.channel}</td>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)" }}>{formatDate(t.timestamp)}</td>
-                    <td style={{ padding: "14px 22px", borderBottom: "1px solid var(--border)" }}>
-                      <span className={`status-badge ${t.status}`}>
-                        <span className="dot" />{STATUS_LABELS[t.status] || t.status}
+                    <td className="px-5 py-3.5 border-b border-line font-semibold text-brand">#{t.transaction_id}</td>
+                    <td className="px-5 py-3.5 border-b border-line font-semibold tabular-nums">{formatAmount(t.amount)}</td>
+                    <td className="px-5 py-3.5 border-b border-line">{t.merchant}</td>
+                    <td className="px-5 py-3.5 border-b border-line text-ink-secondary">{CHANNEL_LABELS[t.channel] || t.channel}</td>
+                    <td className="px-5 py-3.5 border-b border-line">{formatDate(t.timestamp)}</td>
+                    <td className="px-5 py-3.5 border-b border-line">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${STATUS_CLASSES[t.status] || STATUS_CLASSES.pending}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {STATUS_LABELS[t.status] || t.status}
                       </span>
                     </td>
                   </tr>

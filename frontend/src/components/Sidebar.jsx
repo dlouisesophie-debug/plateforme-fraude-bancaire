@@ -10,58 +10,60 @@ const navItems = [
     { to: "/reports", icon: "ti-file-report", label: "Rapports" },
     { to: "/ml-models", icon: "ti-brain", label: "Modèles ML" },
   ]},
+  { section: "Administration", items: [
+    { to: "/users", icon: "ti-users-group", label: "Utilisateurs" },
+  ]},
 ];
-
-const styles = {
-  sidebar: { width: 232, background: "var(--navy-950)", color: "var(--text-inverse)", display: "flex", flexDirection: "column", flexShrink: 0, minHeight: "100vh" },
-  brand: { padding: "22px 20px 18px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(255,255,255,0.08)" },
-  logo: { width: 32, height: 32, borderRadius: 8, background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center" },
-  brandName: { fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600 },
-  navGroup: { padding: "16px 12px", flex: 1 },
-  navLabel: { fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6E84AD", padding: "0 10px", margin: "14px 0 6px" },
-  navItem: { display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 8, fontSize: 13.5, color: "#B9C6E3", textDecoration: "none", marginBottom: 2 },
-  navItemActive: { background: "rgba(47,111,237,0.18)", color: "#fff", fontWeight: 500 },
-  badge: { marginLeft: "auto", background: "var(--danger)", color: "#fff", fontSize: 10, padding: "1px 7px", borderRadius: 9 },
-  userBox: { padding: 14, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 10 },
-  avatar: { width: 30, height: 30, borderRadius: "50%", background: "var(--brand)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 600, color: "#fff" },
-};
 
 export default function Sidebar({ user }) {
   return (
-    <aside style={styles.sidebar}>
-      <div style={styles.brand}>
-        <div style={styles.logo}><i className="ti ti-shield-check" style={{ color: "#fff", fontSize: 16 }} /></div>
-        <span style={styles.brandName}>FraudGuard</span>
+    <aside className="w-[232px] shrink-0 min-h-screen bg-navy-950 text-ink-inverse flex flex-col">
+      <div className="flex items-center gap-2.5 px-5 py-[22px] pb-[18px] border-b border-white/10">
+        <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">
+          <i className="ti ti-shield-check text-white text-base" />
+        </div>
+        <span className="font-display text-[16px] font-semibold">FraudGuard</span>
       </div>
 
-      <nav style={styles.navGroup}>
+      <nav className="px-3 py-4 flex-1">
         {navItems.map((group) => (
           <div key={group.section}>
-            <div style={styles.navLabel}>{group.section}</div>
+            <div className="text-[10px] tracking-widest uppercase text-[#6E84AD] px-2.5 mt-3.5 mb-1.5">
+              {group.section}
+            </div>
             {group.items.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                style={({ isActive }) => ({ ...styles.navItem, ...(isActive ? styles.navItemActive : {}) })}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13.5px] no-underline mb-0.5 ${
+                    isActive ? "bg-brand/20 text-white font-medium" : "text-[#B9C6E3]"
+                  }`
+                }
               >
-                <i className={`ti ${item.icon}`} style={{ fontSize: 17, opacity: 0.9 }} />
+                <i className={`ti ${item.icon} text-[17px] opacity-90`} />
                 {item.label}
-                {item.badge && <span style={styles.badge}>{item.badge}</span>}
+                {item.badge && (
+                  <span className="ml-auto bg-danger text-white text-[10px] px-[7px] py-px rounded-full">
+                    {item.badge}
+                  </span>
+                )}
               </NavLink>
             ))}
           </div>
         ))}
       </nav>
 
-      <div style={styles.userBox}>
-        <div style={styles.avatar}>
+      <div className="p-3.5 border-t border-white/10 flex items-center gap-2.5">
+        <div className="w-[30px] h-[30px] rounded-full bg-brand flex items-center justify-center text-[11px] font-semibold text-white">
           {user ? `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}` : "?"}
         </div>
         <div>
-          <div style={{ fontSize: 12.5, fontWeight: 500 }}>
+          <div className="text-[12.5px] font-medium">
             {user ? `${user.first_name} ${user.last_name}` : "Chargement..."}
           </div>
-          <div style={{ fontSize: 11, color: "#8FA6D1" }}>
+          <div className="text-[11px] text-[#8FA6D1]">
             {user?.role === "admin" && "Administrateur"}
             {user?.role === "analyst" && "Analyste Fraude"}
             {user?.role === "agent" && "Agent Financier"}

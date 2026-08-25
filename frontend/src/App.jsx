@@ -3,6 +3,9 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import AlertsPage from "./pages/AlertsPage";
+import ReportsPage from "./pages/ReportsPage";
+import MLModelsPage from "./pages/MLModelsPage";
+import UsersPage from "./pages/UsersPage";
 import { useAuth } from "./hooks/useAuth";
 
 function PrivateRoute({ children }) {
@@ -36,6 +39,30 @@ export default function App() {
           element={
             <PrivateRoute>
               <AlertsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <PrivateRoute>
+              <ReportsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/ml-models"
+          element={
+            <PrivateRoute>
+              <MLModelsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <PrivateRoute>
+              <UsersPage />
             </PrivateRoute>
           }
         />

@@ -2,8 +2,11 @@ import axios from "axios";
 import {
   mockAlerts,
   mockDashboardKpis,
+  mockMLModels,
+  mockReports,
   mockTransactions,
   mockUser,
+  mockUsersList,
   delay,
 } from "../mocks/mockData";
 
@@ -47,6 +50,14 @@ export const mockApi = {
 
   confirmAlert: async (id) => delay({ id, status: "confirmed" }),
   rejectAlert: async (id) => delay({ id, status: "rejected" }),
+
+  getReports: async () => delay({ count: mockReports.length, results: mockReports }),
+  generateReport: async (payload) =>
+    delay({ id: mockReports.length + 1, ...payload, created_at: new Date().toISOString() }),
+
+  getMLModels: async () => delay({ count: mockMLModels.length, results: mockMLModels }),
+
+  getUsers: async () => delay({ count: mockUsersList.length, results: mockUsersList }),
 };
 
 export const USE_MOCKS_FLAG = USE_MOCKS;

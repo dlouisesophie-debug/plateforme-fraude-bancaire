@@ -4,88 +4,97 @@ import Topbar from "../components/Topbar";
 import api, { mockApi, USE_MOCKS_FLAG } from "../services/api";
 import { mockUser } from "../mocks/mockData";
 
-const styles = {
-  main: { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 },
-  content: { padding: 28 },
-  kpiGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 },
-  card: { background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 14, padding: 20 },
-  kpiNum: { fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 600, letterSpacing: "-0.01em" },
-  kpiLabel: { fontSize: 12.5, color: "var(--text-secondary)", marginTop: 4 },
-};
-
 function formatNumber(n) {
   return new Intl.NumberFormat("fr-FR").format(n);
 }
 
+const KPI_CARDS = [
+  { key: "transaction_volume", label: "Volume de transactions", icon: "ti-arrows-exchange", iconBg: "bg-brand-soft", iconFg: "text-brand", format: (v) => formatNumber(v) },
+  { key: "fraud_rate", label: "Taux de fraude", icon: "ti-percentage", iconBg: "bg-danger-soft", iconFg: "text-danger", format: (v) => `${v}%` },
+  { key: "amount_at_risk", label: "Montant à risque", icon: "ti-cash-off", iconBg: "bg-warning-soft", iconFg: "text-warning", format: (v) => `${formatNumber(Math.round(v / 1000000))}M FCFA` },
+  { key: "active_alerts", label: "Alertes actives", icon: "ti-bell-ringing", iconBg: "bg-success-soft", iconFg: "text-success", format: (v) => v },
+];
+
 export default function DashboardPage() {
   const [kpis, setKpis] = useState(null);
-  const [user] = useState(mockUser); // TODO Etudiant 3 : recuperer via /api/auth/me/ une fois dispo
+  const [user] = useState(mockUser);
 
   useEffect(() => {
     async function load() {
       const data = USE_MOCKS_FLAG
         ? await mockApi.getDashboardKpis()
-        : (await api.get("/dashboard/kpis/")).data; // TODO Etudiant 1 : endpoint a exposer
+        : (await api.get("/dashboard/kpis/")).data;
       setKpis(data);
     }
     load();
   }, []);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div className="flex">
       <Sidebar user={user} />
-      <div style={styles.main}>
+      <div className="flex-1 flex flex-col min-w-0">
         <Topbar title="Dashboard">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--canvas)", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", width: 220, color: "var(--text-secondary)", fontSize: 13 }}>
+          <div className="flex items-center gap-2 bg-canvas border border-line rounded-lg px-3 py-2 w-56 text-ink-secondary text-sm">
             <i className="ti ti-search" /> Rechercher...
           </div>
         </Topbar>
 
-        <div style={styles.content}>
-          <div style={{ color: "var(--text-secondary)", fontSize: 13.5, marginBottom: 24 }}>
+        <div className="p-7">
+          <div className="text-ink-secondary text-[13.5px] mb-6">
             Vue d'ensemble de l'activité — 7 derniers jours
           </div>
 
           {!kpis ? (
-            <div style={{ color: "var(--text-secondary)" }}>Chargement...</div>
+            <div className="text-ink-secondary">Chargement...</div>
           ) : (
-            <div style={styles.kpiGrid}>
-              <div style={styles.card}>
-                <div style={styles.kpiNum}>{formatNumber(kpis.transaction_volume)}</div>
-                <div style={styles.kpiLabel}>Volume de transactions</div>
-              </div>
-              <div style={styles.card}>
-                <div style={styles.kpiNum}>{kpis.fraud_rate}%</div>
-                <div style={styles.kpiLabel}>Taux de fraude</div>
-              </div>
-              <div style={styles.card}>
-                <div style={styles.kpiNum}>{formatNumber(kpis.amount_at_risk / 1000000)}M FCFA</div>
-                <div style={styles.kpiLabel}>Montant à risque</div>
-              </div>
-              <div style={styles.card}>
-                <div style={styles.kpiNum}>{kpis.active_alerts}</div>
-                <div style={styles.kpiLabel}>Alertes actives</div>
-              </div>
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {KPI_CARDS.map((c) => (
+                <div key={c.key} className="bg-surface border border-line rounded-xl p-5">
+                  <div className={`w-[34px] h-[34px] rounded-[9px] flex items-center justify-center mb-3.5 ${c.iconBg} ${c.iconFg}`}>
+                    <i className={`ti ${c.icon}`} />
+                  </div>
+                  <div className="font-display text-[30px] font-semibold tracking-tight tabular-nums">
+                    {c.format(kpis[c.key])}
+                  </div>
+                  <div className="text-[12.5px] text-ink-secondary mt-1">{c.label}</div>
+                </div>
+              ))}
             </div>
           )}
 
           {kpis && (
-            <div style={{ ...styles.card, marginTop: 8 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 600, marginBottom: 18 }}>Évolution des transactions</div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 120 }}>
-                {kpis.weekly_volume.map((d) => (
-                  <div key={d.day} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                    <div style={{ width: "100%", height: d.value, background: "var(--brand)", borderRadius: "5px 5px 0 0" }} />
-                    <div style={{ fontSize: 10.5, color: "var(--text-secondary)" }}>{d.day}</div>
-                  </div>
-                ))}
+            <div className="grid grid-cols-[1.6fr_1fr] gap-4">
+              <div className="bg-surface border border-line rounded-xl p-5">
+                <div className="text-[14.5px] font-semibold mb-4">Évolution des transactions</div>
+                <div className="flex items-end gap-2.5 h-32">
+                  {kpis.weekly_volume.map((d) => (
+                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div className="w-full bg-brand rounded-t" style={{ height: `${d.value}px` }} />
+                      <div className="text-[10.5px] text-ink-secondary">{d.day}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-surface border border-line rounded-xl p-5">
+                <div className="text-[14.5px] font-semibold mb-4">Répartition par canal</div>
+                <div className="flex flex-col gap-2">
+                  {kpis.channel_breakdown.map((c) => (
+                    <div key={c.channel} className="flex items-center gap-2 text-xs">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{
+                          background: c.channel === "card" ? "#2F6FED" : c.channel === "mobile_money" ? "#E8A33D" : "#D64545",
+                        }}
+                      />
+                      {c.label}
+                      <span className="ml-auto text-ink-secondary">{c.percent}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
-
-          {/* TODO Etudiant 3 : remplacer ce bar chart CSS par un vrai graphique
-              Recharts (LineChart/BarChart) une fois le design valide, et ajouter
-              le donut de repartition par canal (kpis.channel_breakdown) */}
         </div>
       </div>
     </div>

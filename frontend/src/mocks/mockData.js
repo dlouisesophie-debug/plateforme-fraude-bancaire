@@ -168,6 +168,25 @@ export const mockDashboardKpis = {
   ],
 };
 
+export const mockReports = [
+  { id: 1, title: "Rapport mensuel — Juillet 2026", type: "pdf", generated_by: 1, period_start: "2026-07-01", period_end: "2026-07-31", created_at: "2026-08-01T09:00:00Z" },
+  { id: 2, title: "Export transactions — Semaine 32", type: "csv", generated_by: 3, period_start: "2026-08-03", period_end: "2026-08-09", created_at: "2026-08-09T08:30:00Z" },
+  { id: 3, title: "Rapport alertes critiques — Août 2026", type: "pdf", generated_by: 1, period_start: "2026-08-01", period_end: "2026-08-09", created_at: "2026-08-09T07:15:00Z" },
+];
+
+export const mockMLModels = [
+  { id: 1, version: "v1.3", algorithm: "xgboost", precision_score: 0.94, recall_score: 0.91, f1_score: 0.92, auc_roc: 0.97, trained_at: "2026-08-05T10:00:00Z", is_active: true },
+  { id: 2, version: "v1.2", algorithm: "random_forest", precision_score: 0.89, recall_score: 0.86, f1_score: 0.87, auc_roc: 0.93, trained_at: "2026-07-20T10:00:00Z", is_active: false },
+  { id: 3, version: "v1.1", algorithm: "logistic_regression", precision_score: 0.81, recall_score: 0.77, f1_score: 0.79, auc_roc: 0.88, trained_at: "2026-07-05T10:00:00Z", is_active: false },
+];
+
+export const mockUsersList = [
+  { id: 1, username: "fatou.ndoye", email: "fatou.ndoye@fraudguard.sn", first_name: "Fatou", last_name: "Ndoye", role: "analyst", is_active: true },
+  { id: 2, username: "amadou.sy", email: "amadou.sy@fraudguard.sn", first_name: "Amadou", last_name: "Sy", role: "agent", is_active: true },
+  { id: 3, username: "admin", email: "admin@fraudguard.sn", first_name: "Admin", last_name: "Système", role: "admin", is_active: true },
+  { id: 4, username: "khadija.ba", email: "khadija.ba@fraudguard.sn", first_name: "Khadija", last_name: "Ba", role: "analyst", is_active: false },
+];
+
 // Simule la latence reseau pour des transitions de chargement realistes
 export function delay(data, ms = 400) {
   return new Promise((resolve) => setTimeout(() => resolve(data), ms));
