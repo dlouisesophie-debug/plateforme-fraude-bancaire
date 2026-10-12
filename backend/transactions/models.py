@@ -19,6 +19,10 @@ class Transaction(models.Model):
         FRAUDULENT = "fraudulent", "Frauduleuse"
         UNDER_REVIEW = "under_review", "En cours d'examen"
 
+    class Gender(models.TextChoices):
+        FEMALE = "F", "Femme"
+        MALE = "M", "Homme"
+
     transaction_id = models.CharField(max_length=50, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     merchant = models.CharField(max_length=255, blank=True)
@@ -35,6 +39,26 @@ class Transaction(models.Model):
         related_name="transactions",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # --- Champs necessaires au scoring ML (pipeline ml/models/fraudguard_pipeline.joblib) ---
+    # Ces champs reproduisent les variables utilisees a l'entrainement
+    # (voir ml/src/preprocessing.py). Sans eux, fraud_detection.services
+    # ne peut pas construire les features attendues par le modele.
+    category = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Categorie du commercant, parmi celles connues du modele ML (ex: achats, achats_en_ligne, courses, restauration, voyage...). Une categorie inconnue n'est pas prise en compte par le modele.",
+    )
+    customer_gender = models.CharField(max_length=1, choices=Gender.choices, blank=True)
+    customer_birth_date = models.DateField(null=True, blank=True)
+    customer_city = models.CharField(max_length=150, blank=True)
+    customer_region = models.CharField(max_length=100, blank=True)
+    customer_city_population = models.PositiveIntegerField(null=True, blank=True)
+    customer_profession = models.CharField(max_length=150, blank=True)
+    customer_latitude = models.FloatField(null=True, blank=True)
+    customer_longitude = models.FloatField(null=True, blank=True)
+    merchant_latitude = models.FloatField(null=True, blank=True)
+    merchant_longitude = models.FloatField(null=True, blank=True)
 
     class Meta:
         db_table = "transactions"

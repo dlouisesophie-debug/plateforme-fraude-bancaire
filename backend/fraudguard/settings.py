@@ -134,3 +134,12 @@ CORS_ALLOWED_ORIGINS = [
 
 # --- Regle metier CDC 5.3 ---
 FRAUD_ALERT_THRESHOLD = float(os.getenv("FRAUD_ALERT_THRESHOLD", "0.7"))
+
+# --- Integration ML (dossier /ml, voir docker-compose.yml) ---
+# ML_MODELS_DIR : ou se trouve fraudguard_pipeline.joblib (monte en lecture
+#   seule par docker-compose, volume ./ml/models:/app/ml_models).
+# ML_SRC_DIR : ou se trouve ml/src/preprocessing.py et predict.py (monte
+#   par docker-compose, volume ./ml/src:/app/ml_src) — ajoute a sys.path
+#   par fraud_detection/apps.py pour pouvoir faire `import preprocessing`.
+ML_MODELS_DIR = os.getenv("ML_MODELS_DIR", str(BASE_DIR / "ml_models"))
+ML_SRC_DIR = os.getenv("ML_SRC_DIR", str(BASE_DIR / "ml_src"))

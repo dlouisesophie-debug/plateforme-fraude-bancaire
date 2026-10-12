@@ -31,6 +31,7 @@ services:
     volumes:
       - ./backend:/app
       - ./ml/models:/app/ml_models
+      - ./ml/src:/app/ml_src
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
