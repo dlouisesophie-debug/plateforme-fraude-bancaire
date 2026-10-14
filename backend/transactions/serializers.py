@@ -13,8 +13,15 @@ class TransactionSerializer(serializers.ModelSerializer):
 class TransactionCreateSerializer(serializers.ModelSerializer):
     """
     Serializer de saisie — utilise par l'Agent Financier (CDC 5.2).
-    TODO Etudiant 1 : apres save(), appeler le service de scoring
-    (app fraud_detection) pour generer automatiquement une Prediction.
+
+    Les champs customer_*/merchant_*/category sont utilises par
+    fraud_detection.services.score_transaction() pour construire les
+    features attendues par le pipeline ML (voir ml/src/preprocessing.py).
+    Ils sont optionnels au niveau du modele (retrocompatibilite), mais
+    doivent etre fournis par le frontend/l'agent pour que le scoring soit
+    fiable : une transaction sans ces donnees sera tout de meme scoree,
+    avec des valeurs par defaut neutres (0 / vide) a la place des
+    informations manquantes.
     """
 
     class Meta:
@@ -22,4 +29,9 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
         fields = [
             "transaction_id", "amount", "merchant", "device",
             "location", "channel", "timestamp",
+            "category",
+            "customer_gender", "customer_birth_date", "customer_city",
+            "customer_region", "customer_city_population", "customer_profession",
+            "customer_latitude", "customer_longitude",
+            "merchant_latitude", "merchant_longitude",
         ]
