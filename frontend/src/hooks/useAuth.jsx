@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import api from "../services/api";
 
-export function useAuth() {
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(
     Boolean(localStorage.getItem("access_token"))
   );
@@ -19,5 +21,17 @@ export function useAuth() {
     setIsAuthenticated(false);
   }, []);
 
-  return { isAuthenticated, login, logout };
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth doit etre utilise a l'interieur de <AuthProvider>");
+  }
+  return context;
 }
