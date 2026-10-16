@@ -7,7 +7,7 @@ Responsable : Étudiant 2 (Lead Data Scientist / ML Engineer)
 ## Structure
 
 ```
-notebooks/    Notebooks d'exploration (historiques : voir la note en tête de chaque notebook)
+notebooks/    Notebooks d'exploration (historiques : la version de référence est src/training.py)
 data/raw/     Données brutes (non versionnées, voir .gitignore) — fraudTest_senegal.csv à placer ici
 src/          Code réutilisable : preprocessing, training, evaluation, predict
 models/       fraudguard_pipeline.joblib — versionné dans Git (≈ 1 Mo), nécessaire à la CI
