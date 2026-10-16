@@ -56,6 +56,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
       window.location.assign("/login");
       return Promise.reject(refreshError);
     } finally {
@@ -63,5 +64,32 @@ api.interceptors.response.use(
     }
   }
 );
+
+// Le backend peut renvoyer une URL absolue ("http://.../api/reports/1/download/")
+// ou un chemin incluant déjà le préfixe "/api" : on évite de le doubler.
+function resolveDownloadUrl(url) {
+  if (/^https?:\/\//.test(url)) return url;
+  const basePath = new URL(api.defaults.baseURL, window.location.origin).pathname.replace(/\/$/, "");
+  return basePath && url.startsWith(`${basePath}/`) ? url.slice(basePath.length) : url;
+}
+
+function filenameFromHeaders(headers, fallback) {
+  const disposition = headers?.["content-disposition"] || "";
+  const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+  return match ? decodeURIComponent(match[1]) : fallback;
+}
+
+// Télécharge un fichier protégé par JWT (un simple <a href> n'enverrait pas le token).
+export async function downloadFile(url, { params, filename } = {}) {
+  const response = await api.get(resolveDownloadUrl(url), { params, responseType: "blob" });
+  const blobUrl = URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filenameFromHeaders(response.headers, filename || "export");
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(blobUrl);
+}
 
 export default api;

@@ -18,7 +18,7 @@ export default function LoginPage() {
       navigate("/");
     } catch (err) {
       if (!err.response) {
-        setError("Serveur injoignable. Verifiez que le backend est demarre.");
+        setError("Serveur injoignable. Vérifiez que le backend est démarré.");
       } else if (err.response.status === 401) {
         setError("Identifiants invalides");
       } else {
@@ -31,10 +31,10 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-8 shadow-sm">
         <h1 className="font-display text-2xl font-semibold text-ink-primary">FraudGuard</h1>
-        <p className="mt-1 text-sm text-ink-secondary">Connexion a votre espace</p>
+        <p className="mt-1 text-sm text-ink-secondary">Connexion à votre espace</p>
         {USE_MOCKS && (
           <div className="mt-4 rounded-xl bg-canvas px-3 py-2 text-xs text-ink-secondary">
-            Mode demo (sans backend) : n'importe quel nom et mot de passe
+            Mode démo (sans backend) : « admin », « analyste » ou « agent » avec n'importe quel mot de passe
           </div>
         )}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
