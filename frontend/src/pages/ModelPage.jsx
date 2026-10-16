@@ -6,7 +6,7 @@ import StatusBadge from "../components/StatusBadge";
 import Notice from "../components/Notice";
 import { ALGORITHM_CHOICES, labelFor } from "../constants/choices";
 import { CARD_CLASS } from "../constants/ui";
-import { asList, formatDateTime, formatProbability } from "../utils/format";
+import { asList, formatDateTime, formatProbability, formatVersion } from "../utils/format";
 
 const METRICS = [
   ["precision_score", "Précision"],
@@ -67,7 +67,7 @@ export default function ModelPage() {
             {activeModel ? (
               <>
                 <p className="mt-2 font-display text-2xl font-semibold text-ink-primary">
-                  {labelFor(ALGORITHM_CHOICES, activeModel.algorithm)} v{activeModel.version}
+                  {labelFor(ALGORITHM_CHOICES, activeModel.algorithm)} {formatVersion(activeModel.version)}
                 </p>
                 <p className="mt-1 text-sm text-ink-secondary">Entraîné le {formatDateTime(activeModel.trained_at)}</p>
               </>
@@ -106,7 +106,7 @@ export default function ModelPage() {
                 <tbody className="divide-y divide-line">
                   {models.map((m) => (
                     <tr key={m.id} className="text-ink-primary">
-                      <td className="whitespace-nowrap px-4 py-3 font-medium">v{m.version}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-medium">{formatVersion(m.version)}</td>
                       <td className="whitespace-nowrap px-4 py-3">{labelFor(ALGORITHM_CHOICES, m.algorithm)}</td>
                       {METRICS.map(([key]) => (
                         <td key={key} className="whitespace-nowrap px-4 py-3 text-right tabular-nums">

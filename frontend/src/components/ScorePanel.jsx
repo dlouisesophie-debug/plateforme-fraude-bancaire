@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import StatusBadge from "./StatusBadge";
 import { scoreTone } from "./ScoreBadge";
 import { ALERT_STATUS_CHOICES, TRANSACTION_STATUS_CHOICES, labelFor } from "../constants/choices";
-import { formatProbability } from "../utils/format";
+import { formatProbability, formatVersion } from "../utils/format";
 import { scoringInfo } from "../utils/transaction";
 
 // Bloc "verdict du modèle" : score, statut, version du modèle, alerte liée.
@@ -40,7 +40,7 @@ export default function ScorePanel({ transaction, showAlertLink = false }) {
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-ink-secondary">Modèle</dt>
-          <dd className="font-medium text-ink-primary">{modelVersion ? `v${modelVersion}` : "—"}</dd>
+          <dd className="font-medium text-ink-primary">{formatVersion(modelVersion)}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-ink-secondary">Alerte liée</dt>

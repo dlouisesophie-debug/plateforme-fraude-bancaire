@@ -76,3 +76,9 @@ export function apiErrorMessage(err, fallback) {
   }
   return fallback ?? `Erreur serveur (${err.response.status})`;
 }
+
+// "1.0.0" -> "v1.0.0" ; "v1" reste "v1" (le backend peut déjà inclure le préfixe).
+export function formatVersion(version) {
+  if (version === null || version === undefined || version === "") return "—";
+  return /^v/i.test(String(version)) ? String(version) : `v${version}`;
+}
