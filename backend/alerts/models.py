@@ -12,14 +12,14 @@ from fraud_detection.models import Prediction
 class Alert(models.Model):
     class Status(models.TextChoices):
         OPEN = "open", "Ouverte"
-        CONFIRMED = "confirmed", "Fraude confirmee"
-        REJECTED = "rejected", "Rejetee"
-        RESOLVED = "resolved", "Resolue"
+        CONFIRMED = "confirmed", "Fraude confirmée"
+        REJECTED = "rejected", "Rejetée"
+        RESOLVED = "resolved", "Résolue"
 
     class Severity(models.TextChoices):
         LOW = "low", "Faible"
         MEDIUM = "medium", "Moyenne"
-        HIGH = "high", "Elevee"
+        HIGH = "high", "Élevée"
         CRITICAL = "critical", "Critique"
 
     prediction = models.OneToOneField(Prediction, on_delete=models.CASCADE, related_name="alert")

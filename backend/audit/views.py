@@ -11,3 +11,4 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AuditLog.objects.all().order_by("-created_at")
     serializer_class = AuditLogSerializer
     permission_classes = [IsAdmin]
+    filterset_fields = ["action", "user"]

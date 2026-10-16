@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "alerts",
     "reports",
     "audit",
+    "dashboard",
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+MEDIA_URL = "media/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -126,11 +128,26 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "FraudGuard API",
     "DESCRIPTION": "API de detection de fraude bancaire",
     "VERSION": "1.0.0",
+    # Noms explicites pour les différents champs "status" dans Swagger.
+    "ENUM_NAME_OVERRIDES": {
+        "TransactionStatusEnum": "transactions.models.Transaction.Status",
+        "AlertStatusEnum": "alerts.models.Alert.Status",
+    },
 }
 
+# Origines autorisées à appeler l'API (frontend React). Liste séparée par des
+# virgules dans le .env, ex. : http://localhost:3000,https://fraudguard.onrender.com
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
+    origine.strip()
+    for origine in os.getenv(
+        "DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"
+    ).split(",")
+    if origine.strip()
 ]
+
+# Fichiers générés (rapports PDF/CSV, CDC 5.5)
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media")))
+REPORTS_DIR = MEDIA_ROOT / "reports"
 
 # --- Regle metier CDC 5.3 ---
 FRAUD_ALERT_THRESHOLD = float(os.getenv("FRAUD_ALERT_THRESHOLD", "0.7"))

@@ -70,3 +70,37 @@ class AlertAPITests(APITestCase):
         self.client.patch(f"{URL}{self.alert.id}/", {"status": "confirmed"}, format="json")
         self.transaction.refresh_from_db()
         self.assertEqual(self.transaction.status, Transaction.Status.FRAUDULENT)
+
+    def test_alerte_contient_les_infos_de_la_transaction(self):
+        self.client.force_authenticate(self.analyste)
+        alerte = self.client.get(URL).json()["results"][0]
+        self.assertEqual(alerte["transaction_id"], "T-ALERTE-1")
+        self.assertEqual(alerte["amount"], "100.00")
+        self.assertEqual(alerte["channel"], "online")
+        self.assertAlmostEqual(alerte["fraud_probability"], 0.9)
+        self.assertEqual(alerte["status_label"], "Ouverte")
+        self.assertIn("timestamp", alerte)
+
+    def test_confirm_avec_commentaire(self):
+        self.client.force_authenticate(self.analyste)
+        self.client.post(f"{URL}{self.alert.id}/confirm/", {"comment": "Client injoignable"}, format="json")
+        self.alert.refresh_from_db()
+        self.assertEqual(self.alert.comment, "Client injoignable")
+        self.assertEqual(self.alert.assigned_to, self.analyste)
+
+    def test_annoter_sans_statuer(self):
+        self.client.force_authenticate(self.analyste)
+        reponse = self.client.patch(f"{URL}{self.alert.id}/", {"comment": "A rappeler"}, format="json")
+        self.assertEqual(reponse.status_code, 200)
+        self.alert.refresh_from_db()
+        self.transaction.refresh_from_db()
+        self.assertEqual(self.alert.comment, "A rappeler")
+        self.assertEqual(self.alert.status, Alert.Status.OPEN)
+        self.assertEqual(self.transaction.status, Transaction.Status.UNDER_REVIEW)
+
+    def test_patch_confirme_renseigne_la_date_de_resolution(self):
+        self.client.force_authenticate(self.analyste)
+        self.client.patch(f"{URL}{self.alert.id}/", {"status": "confirmed"}, format="json")
+        self.alert.refresh_from_db()
+        self.assertIsNotNone(self.alert.resolved_at)
+        self.assertEqual(self.alert.assigned_to, self.analyste)
