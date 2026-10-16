@@ -86,7 +86,12 @@ const alertForTransaction = (t) => alerts.find((a) => a.transaction === t.id);
 
 function serializeTransaction(t) {
   const alert = alertForTransaction(t);
-  return { ...t, alert_id: alert?.id ?? null, alert_status: alert?.status ?? null };
+  return {
+    ...t,
+    is_fraud_predicted: t.fraud_probability === null ? null : t.fraud_probability >= DECISION_THRESHOLD,
+    alert_id: alert?.id ?? null,
+    alert_status: alert?.status ?? null,
+  };
 }
 
 function serializeAlert(a) {
@@ -164,18 +169,43 @@ function dashboardStats(params) {
   });
 
   const ids = new Set(items.map((t) => t.id));
+  const ratio = (n, d) => (d ? Number((n / d).toFixed(4)) : null);
+  const model = mlModels.find((m) => m.is_active);
+  // Même forme que backend/dashboard/services.py (calculer_statistiques).
   return {
-    total_transactions: total,
-    fraud_rate: total > 0 ? Number(((byStatus.fraudulent / total) * 100).toFixed(2)) : 0,
-    amount_at_risk: items
-      .filter((t) => t.status === "fraudulent" || t.status === "under_review")
-      .reduce((acc, t) => acc + Number(t.amount), 0),
-    open_alerts: alerts.filter((a) => a.status === "open" && ids.has(a.transaction)).length,
-    by_status: byStatus,
-    daily: Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)),
+    filters: { date_after: params.date_after || null, date_before: params.date_before || null, channel: null },
+    kpis: {
+      total_transactions: total,
+      fraudulent_transactions: byStatus.fraudulent,
+      fraud_rate: total > 0 ? Number(((byStatus.fraudulent / total) * 100).toFixed(2)) : 0,
+      amount_at_risk: items
+        .filter((t) => t.status === "fraudulent" || t.status === "under_review")
+        .reduce((acc, t) => acc + Number(t.amount), 0),
+      active_alerts: alerts.filter((a) => a.status === "open" && ids.has(a.transaction)).length,
+    },
+    by_status: Object.entries(byStatus).map(([status, count]) => ({ status, count })),
     by_channel: byChannel,
-    confusion_matrix: cm,
-    active_model: mlModels.find((m) => m.is_active) || null,
+    daily: Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)),
+    confusion_matrix: {
+      true_positive: cm.tp,
+      false_positive: cm.fp,
+      false_negative: cm.fn,
+      true_negative: cm.tn,
+      evaluated: cm.tp + cm.fp + cm.fn + cm.tn,
+      precision: ratio(cm.tp, cm.tp + cm.fp),
+      recall: ratio(cm.tp, cm.tp + cm.fn),
+    },
+    active_model: model
+      ? {
+          version: model.version,
+          algorithm: model.algorithm,
+          precision: model.precision_score,
+          recall: model.recall_score,
+          f1_score: model.f1_score,
+          auc_roc: model.auc_roc,
+          trained_at: model.trained_at,
+        }
+      : null,
   };
 }
 
@@ -267,7 +297,7 @@ function handle(config) {
         resolved_at: null,
       });
     }
-    return respond(config, 201, { ...serializeTransaction(transaction), is_fraud: isFraud });
+    return respond(config, 201, { ...serializeTransaction(transaction), is_fraud_predicted: isFraud });
   }
 
   if (method === "get" && (match = path.match(/^\/transactions\/(\d+)\/$/))) {
@@ -314,7 +344,7 @@ function handle(config) {
       id,
       generated_by: currentUser(config).id,
       file_path: `reports/rapport_${id}.${body.type}`,
-      download_url: `/reports/${id}/download/`,
+      download_url: `/api/reports/${id}/download/`,
       created_at: new Date().toISOString(),
     };
     reports.unshift(report);

@@ -61,14 +61,16 @@ function readConfusion(cm) {
 }
 
 function normalizeStats(data) {
-  const total = Number(data.total_transactions ?? data.total ?? 0);
+  // Les KPIs sont regroupés sous "kpis" dans la réponse du backend.
+  const kpis = data.kpis || {};
+  const total = Number(kpis.total_transactions ?? 0);
   const byStatus = STATUS_META.map((meta) => ({ ...meta, count: statusCount(data.by_status, meta.key) }));
   const fraudulent = byStatus.find((s) => s.key === "fraudulent").count;
   return {
     total,
-    fraudRate: data.fraud_rate ?? (total > 0 ? (fraudulent / total) * 100 : 0),
-    amountAtRisk: data.amount_at_risk ?? 0,
-    openAlerts: data.open_alerts ?? data.active_alerts ?? 0,
+    fraudRate: kpis.fraud_rate ?? (total > 0 ? (fraudulent / total) * 100 : 0),
+    amountAtRisk: kpis.amount_at_risk ?? 0,
+    openAlerts: kpis.active_alerts ?? 0,
     byStatus,
     daily: (data.daily || []).map((d) => ({
       date: d.date ?? d.day,

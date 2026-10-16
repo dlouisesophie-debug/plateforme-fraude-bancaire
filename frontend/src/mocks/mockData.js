@@ -154,7 +154,7 @@ export const reports = [
     period_start: "2026-09-01",
     period_end: "2026-09-30",
     file_path: "reports/rapport_1.pdf",
-    download_url: "/reports/1/download/",
+    download_url: "/api/reports/1/download/",
     created_at: "2026-10-01T08:00:00Z",
   },
 ];

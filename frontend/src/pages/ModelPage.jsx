@@ -15,6 +15,17 @@ const METRICS = [
   ["auc_roc", "AUC-ROC"],
 ];
 
+// active_model de /dashboard/stats/ nomme les métriques "precision" et
+// "recall" ; la liste /fraud-detection/models/ utilise "precision_score"...
+function normalizeModel(model) {
+  if (!model) return null;
+  return {
+    ...model,
+    precision_score: model.precision_score ?? model.precision,
+    recall_score: model.recall_score ?? model.recall,
+  };
+}
+
 export default function ModelPage() {
   const [activeModel, setActiveModel] = useState(null);
   const [models, setModels] = useState([]);
@@ -29,7 +40,7 @@ export default function ModelPage() {
         const list = modelsRes.status === "fulfilled" ? asList(modelsRes.value.data) : [];
         setModels(list);
         const fromStats = statsRes.status === "fulfilled" ? statsRes.value.data.active_model : null;
-        setActiveModel(fromStats || list.find((m) => m.is_active) || null);
+        setActiveModel(normalizeModel(fromStats || list.find((m) => m.is_active)));
         if (modelsRes.status === "rejected" && statsRes.status === "rejected") {
           setError("Impossible de charger les informations du modèle.");
         }

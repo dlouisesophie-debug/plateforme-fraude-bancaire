@@ -6,7 +6,7 @@ export function scoringInfo(transaction) {
   return {
     probability: transaction?.fraud_probability ?? prediction.fraud_probability ?? null,
     modelVersion: transaction?.model_version ?? prediction.model_version ?? null,
-    isFraud: transaction?.is_fraud ?? prediction.prediction ?? null,
+    isFraud: transaction?.is_fraud_predicted ?? prediction.prediction ?? null,
     alertId: transaction?.alert_id ?? null,
     alertStatus: transaction?.alert_status ?? null,
   };

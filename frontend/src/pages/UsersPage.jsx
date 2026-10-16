@@ -86,7 +86,7 @@ export default function UsersPage() {
   useEffect(() => {
     let cancelled = false;
     api
-      .get("/auth/users/", { params: { page_size: 100 } })
+      .get("/auth/users/")
       .then((res) => {
         if (!cancelled) setUsers(asList(res.data));
       })
