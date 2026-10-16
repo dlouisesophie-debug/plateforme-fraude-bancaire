@@ -24,6 +24,11 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
     informations manquantes.
     """
 
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Le montant doit etre strictement superieur a 0.")
+        return value
+
     class Meta:
         model = Transaction
         fields = [

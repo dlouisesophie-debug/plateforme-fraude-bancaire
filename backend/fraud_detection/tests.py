@@ -21,6 +21,7 @@ from django.test import TestCase
 from django.utils.dateparse import parse_date, parse_datetime
 
 from alerts.models import Alert
+from authentication.models import User
 from transactions.models import Transaction
 
 from . import services
@@ -128,3 +129,22 @@ class CommandeActiverModeleTests(TestCase):
         with self.assertRaises(CommandError):
             call_command("activer_modele_ml", "inexistant.joblib", stdout=StringIO())
         self.assertFalse(MLModel.objects.exists())
+
+
+class PermissionsAdminTests(TestCase):
+    """IsAdmin accepte le role admin ET le superuser ; refuse les autres."""
+
+    def test_modeles_ml_reserves_a_ladmin(self):
+        from rest_framework.test import APIClient
+        cas = {
+            "admin": User.objects.create_user(username="a", password="x", role="admin"),
+            "superuser": User.objects.create_superuser(username="s", password="x"),
+            "analyst": User.objects.create_user(username="n", password="x", role="analyst"),
+            "agent": User.objects.create_user(username="g", password="x", role="agent"),
+        }
+        attendu = {"admin": 200, "superuser": 200, "analyst": 403, "agent": 403}
+        for nom, utilisateur in cas.items():
+            client = APIClient()
+            client.force_authenticate(utilisateur)
+            for url in ("/api/fraud-detection/models/", "/api/audit/"):
+                self.assertEqual(client.get(url).status_code, attendu[nom], f"{nom} {url}")

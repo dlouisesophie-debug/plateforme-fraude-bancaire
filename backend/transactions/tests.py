@@ -37,6 +37,14 @@ class TransactionAPITests(APITestCase):
         self.assertFalse(Prediction.objects.exists())
         self.assertIn("non scoree", logs.output[0])
 
+    def test_montant_zero_ou_negatif_refuse(self):
+        for montant in (0, -50):
+            donnees = dict(TRANSACTION_NORMALE, transaction_id=f"T-MONTANT-{montant}", amount=montant)
+            reponse = self.client.post(URL, donnees, format="json")
+            self.assertEqual(reponse.status_code, 400)
+            self.assertIn("amount", reponse.data)
+        self.assertFalse(Transaction.objects.exists())
+
     def test_filtrage_par_statut(self):
         Transaction.objects.create(
             transaction_id="X1", amount=1, channel="card",
