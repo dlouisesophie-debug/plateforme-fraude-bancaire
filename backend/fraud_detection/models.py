@@ -12,7 +12,7 @@ class MLModel(models.Model):
     """Suivi des modeles ML deployes (CDC 5.3 / 5.5)."""
 
     class Algorithm(models.TextChoices):
-        LOGISTIC_REGRESSION = "logistic_regression", "Regression logistique"
+        LOGISTIC_REGRESSION = "logistic_regression", "Régression logistique"
         RANDOM_FOREST = "random_forest", "Random Forest"
         XGBOOST = "xgboost", "XGBoost"
 

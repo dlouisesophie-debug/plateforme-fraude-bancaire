@@ -60,7 +60,7 @@ class ScoringTests(TestCase):
         self.assertFalse(prediction.prediction)
         self.assertFalse(Alert.objects.exists())
         t.refresh_from_db()
-        self.assertEqual(t.status, Transaction.Status.PENDING)
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
 
     def test_transaction_frauduleuse_declenche_alerte(self):
         """Vraie fraude (score du modele, pas de valeur forcee)."""
@@ -148,3 +148,60 @@ class PermissionsAdminTests(TestCase):
             client.force_authenticate(utilisateur)
             for url in ("/api/fraud-detection/models/", "/api/audit/"):
                 self.assertEqual(client.get(url).status_code, attendu[nom], f"{nom} {url}")
+
+
+class ScoringAvecFauxModeleTests(TestCase):
+    """Logique de statut après scoring, testée sans le fichier .joblib."""
+
+    def setUp(self):
+        from .testing import activer_faux_modele
+        activer_faux_modele()
+
+    def test_score_sous_le_seuil_passe_la_transaction_en_legitime(self):
+        from .testing import faux_modele
+        t = creer_transaction(TRANSACTION_NORMALE)
+        with faux_modele(0.02):
+            prediction = services.score_transaction(t)
+        t.refresh_from_db()
+        self.assertFalse(prediction.prediction)
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
+        self.assertFalse(Alert.objects.exists())
+
+    def test_score_au_dessus_du_seuil_met_en_examen_et_cree_une_alerte(self):
+        from .testing import faux_modele
+        t = creer_transaction(TRANSACTION_FRAUDE)
+        with faux_modele(0.95):
+            prediction = services.score_transaction(t)
+        t.refresh_from_db()
+        self.assertTrue(prediction.prediction)
+        self.assertEqual(t.status, Transaction.Status.UNDER_REVIEW)
+        self.assertEqual(Alert.objects.get(prediction=prediction).severity, "critical")
+
+
+class SeedDemoTests(TestCase):
+    def test_sans_modele_actif_la_commande_echoue(self):
+        with self.assertRaises(CommandError):
+            call_command("seed_demo", "--nombre", "3", stdout=StringIO())
+
+    def test_cree_les_comptes_et_des_transactions_scorees(self):
+        from .testing import activer_faux_modele, faux_modele
+        activer_faux_modele()
+        # Le faux modèle signale les montants >= 250 000 FCFA.
+        with faux_modele(lambda t: 0.97 if t["montant_fcfa"] >= 250_000 else 0.01):
+            call_command("seed_demo", "--nombre", "20", "--simuler-decisions", stdout=StringIO())
+        self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 20)
+        self.assertEqual(
+            set(User.objects.filter(username__endswith=".demo").values_list("role", flat=True)),
+            {"admin", "analyst", "agent"},
+        )
+        self.assertFalse(Transaction.objects.filter(status=Transaction.Status.PENDING).exists())
+        self.assertEqual(Prediction.objects.count(), 20)
+        self.assertTrue(Alert.objects.exists())
+
+    def test_reset_repart_de_zero(self):
+        from .testing import activer_faux_modele, faux_modele
+        activer_faux_modele()
+        with faux_modele(0.01):
+            call_command("seed_demo", "--nombre", "5", stdout=StringIO())
+            call_command("seed_demo", "--nombre", "5", "--reset", stdout=StringIO())
+        self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 5)

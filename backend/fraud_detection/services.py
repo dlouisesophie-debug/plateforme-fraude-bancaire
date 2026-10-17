@@ -160,6 +160,13 @@ def score_transaction(transaction):
         # Marque la transaction comme suspecte, a confirmer/rejeter par
         # un analyste (voir app alerts).
         transaction.status = transaction.Status.UNDER_REVIEW
-        transaction.save(update_fields=["status"])
+    else:
+        # Score sous le seuil : la transaction est classee legitime
+        # automatiquement (diagramme d'activite : "Fraude ? Non ->
+        # Transaction normale"). Un analyste peut toujours la requalifier
+        # en frauduleuse (faux negatif), ce qui alimente la matrice de
+        # confusion du dashboard.
+        transaction.status = transaction.Status.LEGITIMATE
+    transaction.save(update_fields=["status"])
 
     return prediction

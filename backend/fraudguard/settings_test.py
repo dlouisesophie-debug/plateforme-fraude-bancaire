@@ -23,3 +23,10 @@ ML_SRC_DIR = str(BASE_DIR.parent / "ml" / "src")
 
 # Hashage rapide des mots de passe : suffisant (et plus rapide) pour les tests.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+# Rapports générés dans un dossier temporaire pendant les tests.
+import tempfile  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="fraudguard-tests-"))
+REPORTS_DIR = MEDIA_ROOT / "reports"
