@@ -1,0 +1,75 @@
+{
+  "precision_score": 0.6074918566775245,
+  "recall_score": 0.8694638694638694,
+  "f1_score": 0.7152444870565676,
+  "auc_roc": 0.9944878526913481,
+  "pr_auc": 0.8776990445871201,
+  "matrice_confusion": [
+    [
+      110474,
+      241
+    ],
+    [
+      56,
+      373
+    ]
+  ],
+  "seuil_decision": 0.06520199775695801,
+  "date_entrainement": "2026-10-16T14:12:32+00:00",
+  "jeu_evaluation": "test",
+  "seuil_choisi_sur": "validation",
+  "recall_cible_validation": 0.85,
+  "intervalle_confiance_95": {
+    "recall_ic95": [
+      0.8382934670323798,
+      0.8990665214307427
+    ],
+    "precision_ic95": [
+      0.569593253968254,
+      0.6470638597904915
+    ]
+  },
+  "validation": {
+    "seuil": 0.06520199775695801,
+    "precision": 0.6144781144781145,
+    "recall": 0.8508158508158508,
+    "f1_score": 0.7135874877810362,
+    "auc_roc": 0.9923398103048557,
+    "pr_auc": 0.8559942484869398,
+    "matrice_confusion": [
+      [
+        110486,
+        229
+      ],
+      [
+        64,
+        365
+      ]
+    ],
+    "n_echantillons": 111144,
+    "n_fraudes": 429
+  },
+  "algorithme": "XGBoost",
+  "variable_genre_utilisee": false,
+  "hyperparametres": {
+    "subsample": 1.0,
+    "n_estimators": 300,
+    "max_depth": 6,
+    "learning_rate": 0.2,
+    "colsample_bytree": 0.8
+  },
+  "pr_auc_validation_croisee": 0.8822663170488713,
+  "effectifs": {
+    "train": 333431,
+    "validation": 111144,
+    "test": 111144
+  },
+  "versions": {
+    "python": "3.12.3",
+    "scikit-learn": "1.4.2",
+    "xgboost": "2.0.3",
+    "imbalanced-learn": "0.12.2",
+    "pandas": "2.2.2",
+    "numpy": "1.26.4"
+  }
+}
