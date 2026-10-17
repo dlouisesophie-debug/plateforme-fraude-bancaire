@@ -15,7 +15,7 @@ class Transaction(models.Model):
 
     class Status(models.TextChoices):
         PENDING = "pending", "En attente"
-        LEGITIMATE = "legitimate", "Legitime"
+        LEGITIMATE = "legitimate", "Légitime"
         FRAUDULENT = "fraudulent", "Frauduleuse"
         UNDER_REVIEW = "under_review", "En cours d'examen"
 
