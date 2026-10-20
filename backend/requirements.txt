@@ -13,3 +13,5 @@ xgboost==2.0.3
 joblib==1.4.2
 django-filter==24.2
 reportlab==4.2.2
+gunicorn==23.0.0
+whitenoise==6.7.0
