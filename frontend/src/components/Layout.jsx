@@ -4,9 +4,10 @@ import { useAuth } from "../hooks/useAuth";
 import { NAV_ITEMS, canAccess } from "../constants/roles";
 import { ROLE_CHOICES, labelFor } from "../constants/choices";
 import { displayName } from "../utils/format";
+import Logo from "./Logo";
 
 function navLinkClass({ isActive }) {
-  return `block rounded-xl px-3 py-2 text-sm font-medium transition-colors md:py-1.5 ${
+  return `block whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors xl:px-2.5 xl:py-1.5 ${
     isActive ? "bg-brand text-white" : "text-ink-inverse/80 hover:bg-navy-800 hover:text-ink-inverse"
   }`;
 }
@@ -41,7 +42,7 @@ export default function Layout({ children }) {
       >
         {displayName(user).charAt(0).toUpperCase()}
       </span>
-      <div className="min-w-0 leading-tight">
+      <div className="min-w-0 max-w-[11rem] leading-tight" title={displayName(user)}>
         <p className="truncate text-sm font-medium text-ink-inverse">{displayName(user)}</p>
         {roleLabel && <p className="truncate text-xs text-ink-inverse/60">{roleLabel}</p>}
       </div>
@@ -52,9 +53,9 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-canvas">
       <header className="bg-navy-950">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <span className="font-display text-xl font-semibold text-ink-inverse">FraudGuard</span>
+          <Logo variant="dark" />
 
-          <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex">
             {items.map((item) => (
               <NavLink key={item.to} to={item.to} end className={navLinkClass}>
                 {item.label}
@@ -62,12 +63,12 @@ export default function Layout({ children }) {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-4 lg:flex">
+          <div className="hidden shrink-0 items-center gap-3 xl:flex">
             {userBlock}
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-xl px-3 py-1.5 text-sm font-medium text-ink-inverse/80 transition-colors hover:bg-danger hover:text-white"
+              className="whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium text-ink-inverse/80 transition-colors hover:bg-danger hover:text-white"
             >
               Déconnexion
             </button>
@@ -79,7 +80,7 @@ export default function Layout({ children }) {
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            className="rounded-xl p-2 text-ink-inverse transition-colors hover:bg-navy-800 lg:hidden"
+            className="rounded-xl p-2 text-ink-inverse transition-colors hover:bg-navy-800 xl:hidden"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               {menuOpen ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
@@ -88,7 +89,7 @@ export default function Layout({ children }) {
         </div>
 
         {menuOpen && (
-          <div id="mobile-menu" className="border-t border-navy-800 px-4 pb-4 pt-3 lg:hidden">
+          <div id="mobile-menu" className="border-t border-navy-800 px-4 pb-4 pt-3 xl:hidden">
             {userBlock && <div className="mb-3">{userBlock}</div>}
             <nav className="space-y-1">
               {items.map((item) => (

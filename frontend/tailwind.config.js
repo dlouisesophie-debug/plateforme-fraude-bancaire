@@ -17,6 +17,7 @@ module.exports = {
       fontFamily: {
         display: ["Fraunces", "serif"],
         sans: ["Inter", "sans-serif"],
+        logo: ["Poppins", "Inter", "sans-serif"],
       },
       borderRadius: {
         xl: "14px",

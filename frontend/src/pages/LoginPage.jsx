@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { USE_MOCKS } from "../services/api";
+import Logo from "../components/Logo";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -30,8 +31,11 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm rounded-xl border border-line bg-surface p-8 shadow-sm">
-        <h1 className="font-display text-2xl font-semibold text-ink-primary">FraudGuard</h1>
-        <p className="mt-1 text-sm text-ink-secondary">Connexion à votre espace</p>
+        <h1 className="flex justify-center">
+          <span className="sr-only">XelWóor</span>
+          <Logo variant="light" size="lg" withTagline />
+        </h1>
+        <p className="mt-6 text-center text-sm text-ink-secondary">Connexion à votre espace</p>
         {USE_MOCKS && (
           <div className="mt-4 rounded-xl bg-canvas px-3 py-2 text-xs text-ink-secondary">
             Mode démo (sans backend) : « admin », « analyste » ou « agent » avec n'importe quel mot de passe
