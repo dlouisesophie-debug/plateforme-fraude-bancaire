@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" width="560" height="160">
+  <g transform="translate(10,10)">
+  <defs>
+    <linearGradient id="sg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#0B1736"/>
+    </linearGradient>
+    <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#10B981"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 6 L108 23 V64 C108 97 88 121 60 134 C32 121 12 97 12 64 V23 Z" fill="url(#sg)"/>
+  <path d="M60 15 L100 29.5 V64 C100 92 83 112.5 60 124 C37 112.5 20 92 20 64 V29.5 Z" fill="none" stroke="url(#cg)" stroke-width="2.5" opacity=".55"/>
+  <g stroke="url(#cg)" stroke-width="3" stroke-linecap="round" fill="none">
+    <path d="M60 38 L38 56 M60 38 L82 56 M38 56 L44 86 M82 56 L76 86 M44 86 L60 104 M76 86 L60 104"/>
+    <path d="M60 38 L60 68 M38 56 L60 68 M82 56 L60 68 M44 86 L60 68 M76 86 L60 68" opacity=".6"/>
+  </g>
+  <g fill="#E0F7FF">
+    <circle cx="60" cy="38" r="5.5"/><circle cx="38" cy="56" r="5.5"/><circle cx="82" cy="56" r="5.5"/>
+    <circle cx="44" cy="86" r="5.5"/><circle cx="76" cy="86" r="5.5"/><circle cx="60" cy="104" r="5.5"/>
+  </g>
+  <circle cx="60" cy="68" r="11" fill="url(#cg)"/>
+  <path d="M54.5 68 L58.5 72 L66 64" fill="none" stroke="#0B1736" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="148" y="90" font-family="Poppins, Montserrat, Arial, sans-serif" font-weight="700" font-size="60" letter-spacing="0.5" fill="#0B1736">Xel<tspan fill="#0891B2" font-weight="600">Wóor</tspan></text>
+  <text x="152" y="122" font-family="Poppins, Montserrat, Arial, sans-serif" font-weight="500" font-size="15.5" letter-spacing="3.2" fill="#64748B">DÉTECTION INTELLIGENTE DE LA FRAUDE</text>
+</svg>
