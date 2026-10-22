@@ -1,0 +1,10 @@
+# Scripts et fichiers lus dans des conteneurs Linux : toujours en LF,
+# même si le dépôt est cloné sous Windows (core.autocrlf=true).
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.template      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+
+# Modèle ML : fichier binaire, jamais modifié par Git.
+*.joblib        binary

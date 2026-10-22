@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAdminUser
+from authentication.permissions import IsAdmin
 
 from .models import MLModel, Prediction
 from .serializers import MLModelSerializer, PredictionSerializer
@@ -10,7 +10,7 @@ class MLModelViewSet(viewsets.ModelViewSet):
 
     queryset = MLModel.objects.all().order_by("-trained_at")
     serializer_class = MLModelSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdmin]
 
 
 class PredictionViewSet(viewsets.ReadOnlyModelViewSet):

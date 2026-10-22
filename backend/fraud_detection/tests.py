@@ -1,10 +1,207 @@
 """
-TODO Etudiant 1 + Etudiant 2 :
-- test qu'un seul MLModel peut etre is_active=True a la fois
-- test score_transaction() avec un modele mocke
-- test que fraud_probability > seuil declenche bien une Alert
+Tests du scoring ML et de l'enregistrement du modele actif.
+
+    python manage.py test --settings=fraudguard.settings_test
+
+Ils utilisent le VRAI pipeline (ml/models/fraudguard_pipeline.joblib) :
+si le fichier est absent, les tests de scoring sont ignores (skip).
 """
 
-from django.test import TestCase
+import os
+from datetime import datetime, timezone
+from io import StringIO
 
-# Create your tests here.
+from django.conf import settings
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.db import IntegrityError, transaction as db_transaction
+from unittest import skipUnless
+
+from django.test import TestCase
+from django.utils.dateparse import parse_date, parse_datetime
+
+from alerts.models import Alert
+from authentication.models import User
+from transactions.models import Transaction
+
+from . import services
+from .models import MLModel, Prediction
+from .sample_transactions import TRANSACTION_FRAUDE, TRANSACTION_NORMALE
+
+PIPELINE_FILE = "fraudguard_pipeline.joblib"
+PIPELINE_PRESENT = os.path.isfile(os.path.join(settings.ML_MODELS_DIR, PIPELINE_FILE))
+
+
+def creer_transaction(donnees):
+    """Cree une Transaction a partir d'un exemple (memes cles que l'API)."""
+    d = dict(donnees)
+    d["amount"] = d["amount"]
+    d["timestamp"] = parse_datetime(d["timestamp"])
+    d["customer_birth_date"] = parse_date(d["customer_birth_date"])
+    return Transaction.objects.create(**d)
+
+
+def activer_modele(version="test-1"):
+    return MLModel.objects.create(
+        version=version, algorithm="xgboost", trained_at=datetime.now(timezone.utc),
+        is_active=True, artifact_path=PIPELINE_FILE,
+    )
+
+
+@skipUnless(PIPELINE_PRESENT, "fraudguard_pipeline.joblib introuvable dans ml/models")
+class ScoringTests(TestCase):
+    def setUp(self):
+        self.modele = activer_modele()
+
+    def test_transaction_normale_non_flaggee(self):
+        t = creer_transaction(TRANSACTION_NORMALE)
+        prediction = services.score_transaction(t)
+        self.assertLess(prediction.fraud_probability, 0.01)
+        self.assertFalse(prediction.prediction)
+        self.assertFalse(Alert.objects.exists())
+        t.refresh_from_db()
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
+
+    def test_transaction_frauduleuse_declenche_alerte(self):
+        """Vraie fraude (score du modele, pas de valeur forcee)."""
+        t = creer_transaction(TRANSACTION_FRAUDE)
+        prediction = services.score_transaction(t)
+        self.assertTrue(prediction.prediction)
+        self.assertGreaterEqual(prediction.fraud_probability, 0.9)
+        alerte = Alert.objects.get(prediction=prediction)
+        self.assertEqual(alerte.severity, "critical")
+        t.refresh_from_db()
+        self.assertEqual(t.status, Transaction.Status.UNDER_REVIEW)
+
+    def test_rescoring_sans_doublon(self):
+        t = creer_transaction(TRANSACTION_FRAUDE)
+        services.score_transaction(t)
+        services.score_transaction(t)  # ne doit pas lever d'IntegrityError
+        self.assertEqual(Prediction.objects.filter(transaction=t).count(), 1)
+        self.assertEqual(Alert.objects.filter(prediction__transaction=t).count(), 1)
+
+    def test_categorie_inconnue_est_signalee_dans_les_logs(self):
+        donnees = dict(TRANSACTION_NORMALE, transaction_id="T-CAT-INCONNUE", category="shopping_net")
+        t = creer_transaction(donnees)
+        with self.assertLogs("fraud_detection.services", level="WARNING") as logs:
+            services.score_transaction(t)
+        self.assertIn("shopping_net", logs.output[0])
+
+
+class ServicesSansPipelineTests(TestCase):
+    def test_sans_modele_actif_leve_runtime_error(self):
+        t = creer_transaction(TRANSACTION_NORMALE)
+        with self.assertRaises(RuntimeError):
+            services.score_transaction(t)
+
+    def test_gravite_selon_la_probabilite(self):
+        self.assertEqual(services._gravite(0.95), "critical")
+        self.assertEqual(services._gravite(0.80), "high")
+        self.assertEqual(services._gravite(0.60), "medium")
+        self.assertEqual(services._gravite(0.20), "low")
+
+
+class MLModelTests(TestCase):
+    def test_un_seul_modele_actif_a_la_fois(self):
+        activer_modele("v-a")
+        with self.assertRaises(IntegrityError), db_transaction.atomic():
+            activer_modele("v-b")
+
+
+@skipUnless(PIPELINE_PRESENT, "fraudguard_pipeline.joblib introuvable dans ml/models")
+class CommandeActiverModeleTests(TestCase):
+    def lancer(self, *args):
+        call_command("activer_modele_ml", PIPELINE_FILE, *args, stdout=StringIO())
+
+    def test_cree_et_active_le_modele(self):
+        self.lancer("--modele-version", "1", "--algorithm", "xgboost")
+        modele = MLModel.objects.get(is_active=True)
+        self.assertEqual(modele.version, "1")
+        self.assertEqual(modele.artifact_path, PIPELINE_FILE)
+
+    def test_nouvelle_version_desactive_lancienne(self):
+        self.lancer("--modele-version", "1")
+        self.lancer("--modele-version", "2")
+        self.assertEqual(MLModel.objects.filter(is_active=True).count(), 1)
+        self.assertEqual(MLModel.objects.get(is_active=True).version, "2")
+
+    def test_fichier_introuvable(self):
+        with self.assertRaises(CommandError):
+            call_command("activer_modele_ml", "inexistant.joblib", stdout=StringIO())
+        self.assertFalse(MLModel.objects.exists())
+
+
+class PermissionsAdminTests(TestCase):
+    """IsAdmin accepte le role admin ET le superuser ; refuse les autres."""
+
+    def test_modeles_ml_reserves_a_ladmin(self):
+        from rest_framework.test import APIClient
+        cas = {
+            "admin": User.objects.create_user(username="a", password="x", role="admin"),
+            "superuser": User.objects.create_superuser(username="s", password="x"),
+            "analyst": User.objects.create_user(username="n", password="x", role="analyst"),
+            "agent": User.objects.create_user(username="g", password="x", role="agent"),
+        }
+        attendu = {"admin": 200, "superuser": 200, "analyst": 403, "agent": 403}
+        for nom, utilisateur in cas.items():
+            client = APIClient()
+            client.force_authenticate(utilisateur)
+            for url in ("/api/fraud-detection/models/", "/api/audit/"):
+                self.assertEqual(client.get(url).status_code, attendu[nom], f"{nom} {url}")
+
+
+class ScoringAvecFauxModeleTests(TestCase):
+    """Logique de statut après scoring, testée sans le fichier .joblib."""
+
+    def setUp(self):
+        from .testing import activer_faux_modele
+        activer_faux_modele()
+
+    def test_score_sous_le_seuil_passe_la_transaction_en_legitime(self):
+        from .testing import faux_modele
+        t = creer_transaction(TRANSACTION_NORMALE)
+        with faux_modele(0.02):
+            prediction = services.score_transaction(t)
+        t.refresh_from_db()
+        self.assertFalse(prediction.prediction)
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
+        self.assertFalse(Alert.objects.exists())
+
+    def test_score_au_dessus_du_seuil_met_en_examen_et_cree_une_alerte(self):
+        from .testing import faux_modele
+        t = creer_transaction(TRANSACTION_FRAUDE)
+        with faux_modele(0.95):
+            prediction = services.score_transaction(t)
+        t.refresh_from_db()
+        self.assertTrue(prediction.prediction)
+        self.assertEqual(t.status, Transaction.Status.UNDER_REVIEW)
+        self.assertEqual(Alert.objects.get(prediction=prediction).severity, "critical")
+
+
+class SeedDemoTests(TestCase):
+    def test_sans_modele_actif_la_commande_echoue(self):
+        with self.assertRaises(CommandError):
+            call_command("seed_demo", "--nombre", "3", stdout=StringIO())
+
+    def test_cree_les_comptes_et_des_transactions_scorees(self):
+        from .testing import activer_faux_modele, faux_modele
+        activer_faux_modele()
+        # Le faux modèle signale les montants >= 250 000 FCFA.
+        with faux_modele(lambda t: 0.97 if t["montant_fcfa"] >= 250_000 else 0.01):
+            call_command("seed_demo", "--nombre", "20", "--simuler-decisions", stdout=StringIO())
+        self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 20)
+        self.assertEqual(
+            set(User.objects.filter(username__endswith=".demo").values_list("role", flat=True)),
+            {"admin", "analyst", "agent"},
+        )
+        self.assertFalse(Transaction.objects.filter(status=Transaction.Status.PENDING).exists())
+        self.assertEqual(Prediction.objects.count(), 20)
+        self.assertTrue(Alert.objects.exists())
+
+    def test_reset_repart_de_zero(self):
+        from .testing import activer_faux_modele, faux_modele
+        activer_faux_modele()
+        with faux_modele(0.01):
+            call_command("seed_demo", "--nombre", "5", stdout=StringIO())
+            call_command("seed_demo", "--nombre", "5", "--reset", stdout=StringIO())
+        self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 5)

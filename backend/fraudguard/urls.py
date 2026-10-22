@@ -5,6 +5,8 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+# Contrôle de santé /api/health/ : voir fraudguard/middleware.py.
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 
@@ -14,6 +16,7 @@ urlpatterns = [
     path("api/alerts/", include("alerts.urls")),
     path("api/reports/", include("reports.urls")),
     path("api/audit/", include("audit.urls")),
+    path("api/dashboard/", include("dashboard.urls")),
 
     # Documentation Swagger / OpenAPI (CDC 5.3, section 7)
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

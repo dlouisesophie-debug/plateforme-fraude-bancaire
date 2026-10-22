@@ -1,0 +1,12 @@
+{
+  "hyperparametres": {
+    "subsample": 1.0,
+    "n_estimators": 300,
+    "max_depth": 6,
+    "learning_rate": 0.2,
+    "colsample_bytree": 0.8
+  },
+  "pr_auc_cv": 0.8822663170488713,
+  "n_iter": 15,
+  "cv": 3
+}

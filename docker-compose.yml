@@ -1,51 +1,83 @@
-version: "3.9"
+# FraudGuard — environnement complet pour la démo locale.
+#
+#   docker compose up --build
+#
+# Au démarrage du backend (backend/docker-entrypoint.sh) : migrations,
+# activation du modèle ML, données de démo, puis Gunicorn.
+#   Frontend : http://localhost:3000
+#   API      : http://localhost:8000/api   (Swagger : /api/docs/)
+#
+# Le fichier .env est facultatif : sans lui, les valeurs par défaut
+# ci-dessous suffisent pour une démo locale (jamais pour la production).
 
 services:
   db:
     image: postgres:16
-    restart: always
-    env_file: .env
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-fraudguard}
+      POSTGRES_USER: ${POSTGRES_USER:-fraudguard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraudguard}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraudguard} -d ${POSTGRES_DB:-fraudguard}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   backend:
-    build: ./backend
-    restart: always
-    env_file: .env
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fraudguard}
+      POSTGRES_USER: ${POSTGRES_USER:-fraudguard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraudguard}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      # Image de production (Gunicorn, DEBUG=False) mais servie en HTTP local :
+      # la redirection HTTPS et les cookies « Secure » sont désactivés ici,
+      # ils restent actifs sur Render.
+      DJANGO_DEBUG: "False"   # fixe : le DJANGO_DEBUG=True du .env sert au runserver local
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-local-demo-secret-key-a-ne-pas-utiliser-en-production}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DJANGO_CORS_ALLOWED_ORIGINS: ${DJANGO_CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost:8000
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      DJANGO_SECURE_COOKIES: "False"
+      DJANGO_SECURE_HSTS_SECONDS: "0"
+      FRAUD_ALERT_THRESHOLD: ${FRAUD_ALERT_THRESHOLD:-0.7}
     volumes:
-      - ./backend:/app
-      - ./ml/models:/app/ml_models
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+      # Rapports PDF/CSV générés (CDC 5.5) : conservés entre les redémarrages.
+      - media_data:/app/media
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
 
   frontend:
-    build: ./frontend
-    restart: always
-    env_file: .env
+    build:
+      context: ./frontend
+      args:
+        # Intégrées au build React : URL vue depuis le NAVIGATEUR.
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8000/api}
+        REACT_APP_USE_MOCKS: "false"
+    restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "3000:80"
 
 volumes:
   postgres_data:
+  media_data:
