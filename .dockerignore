@@ -1,0 +1,21 @@
+# Contexte de build de l'image backend = racine du dépôt.
+# On n'envoie à Docker que backend/, ml/models et ml/src.
+.git
+.github
+.env
+**/.env
+docs/
+frontend/
+ml/data/
+ml/notebooks/
+ml/reports/
+ml/tests/
+**/__pycache__/
+**/*.pyc
+**/.ipynb_checkpoints/
+backend/media/
+backend/staticfiles/
+backend/ml_models/
+backend/ml_src/
+backend/db.sqlite3
+*.log

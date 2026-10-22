@@ -5,6 +5,8 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
+# Contrôle de santé /api/health/ : voir fraudguard/middleware.py.
+
 urlpatterns = [
     path("admin/", admin.site.urls),
 

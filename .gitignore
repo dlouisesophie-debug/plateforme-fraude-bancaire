@@ -22,6 +22,8 @@ ml/data/processed/*
 ml/models/*.joblib
 ml/models/*.pkl
 !ml/models/.gitkeep
+# Pipeline de production : versionné (utilisé par Docker, Render et la CI)
+!ml/models/fraudguard_pipeline.joblib
 .ipynb_checkpoints/
 
 # Docker

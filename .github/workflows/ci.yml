@@ -8,6 +8,7 @@ on:
 
 jobs:
   backend-tests:
+    name: Tests backend (Django + vrai modèle ML) et couverture
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -22,34 +23,112 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
+    env:
+      POSTGRES_DB: fraudguard_test
+      POSTGRES_USER: fraudguard
+      POSTGRES_PASSWORD: fraudguard
+      POSTGRES_HOST: localhost
+      DJANGO_SECRET_KEY: ci-test-key-uniquement-pour-la-ci-0123456789
+      # Le pipeline ML est versionné dans ml/models (fraudguard_pipeline.joblib) :
+      # on y pointe directement pour que les 9 tests de scoring réels
+      # s'exécutent au lieu d'être ignorés (skip).
+      ML_MODELS_DIR: ${{ github.workspace }}/ml/models
+      ML_SRC_DIR: ${{ github.workspace }}/ml/src
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Installer les dependances
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Installer les dépendances
         working-directory: backend
-        run: pip install -r requirements.txt
-      - name: Lancer les tests Django
+        run: pip install -r requirements.txt coverage==7.6.1
+      - name: Vérifier la présence du modèle ML
+        run: |
+          test -s ml/models/fraudguard_pipeline.joblib || {
+            echo "::error::ml/models/fraudguard_pipeline.joblib absent : les tests de scoring réels seraient ignorés"; exit 1; }
+      - name: Vérifier qu'aucune migration ne manque
+        working-directory: backend
+        run: python manage.py makemigrations --check --dry-run
+      - name: Tests Django (PostgreSQL) avec couverture
+        working-directory: backend
+        run: |
+          coverage run --source=. --omit="*/migrations/*,*/tests.py,manage.py,fraudguard/asgi.py,fraudguard/wsgi.py,fraudguard/settings_test.py" \
+            manage.py test --verbosity 2 2>&1 | tee test-output.txt
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Refuser les tests de scoring ignorés
+        working-directory: backend
+        run: |
+          if grep -q "skipped" test-output.txt; then
+            grep "skipped" test-output.txt
+            echo "::error::Des tests ont été ignorés (modèle ML introuvable ?)"; exit 1
+          fi
+      - name: Rapport de couverture
+        working-directory: backend
+        run: |
+          coverage report -m | tee coverage.txt
+          coverage html -d coverage-html
+          echo '### Couverture des tests backend' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          coverage report >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Publier le rapport de couverture
+        uses: actions/upload-artifact@v4
+        with:
+          name: couverture-backend
+          path: |
+            backend/coverage.txt
+            backend/coverage-html/
+      - name: Contrôles de déploiement Django (production)
         working-directory: backend
         env:
-          POSTGRES_DB: fraudguard_test
-          POSTGRES_USER: fraudguard
-          POSTGRES_PASSWORD: fraudguard
-          POSTGRES_HOST: localhost
-          DJANGO_SECRET_KEY: ci-test-key
-        run: python manage.py test
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: fraudguard-api.onrender.com
+        run: |
+          export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          python manage.py check --deploy --fail-level WARNING
 
   frontend-build:
+    name: Build de production du frontend
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Installer les dependances
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Installer les dépendances
         working-directory: frontend
-        run: npm install
+        run: npm ci
       - name: Build de production
         working-directory: frontend
+        env:
+          REACT_APP_API_URL: https://fraudguard-api.onrender.com/api
+          REACT_APP_USE_MOCKS: "false"
         run: npm run build
+
+  docker-build:
+    name: Construction des images Docker
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image backend (contexte = racine du dépôt)
+        run: docker build -f backend/Dockerfile -t fraudguard-backend .
+      - name: Image frontend
+        run: docker build -t fraudguard-frontend ./frontend
+      - name: Démarrage complet avec docker compose
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8000/api/health/; then break; fi
+            sleep 5
+          done
+          curl -fsS http://localhost:8000/api/health/
+          curl -fsS http://localhost:3000/ | grep -q '<div id="root">'
+          docker compose logs backend | grep -E "Modele ML|transactions de démo|déjà présentes"
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs
