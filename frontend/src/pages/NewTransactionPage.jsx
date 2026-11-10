@@ -7,7 +7,6 @@ import Notice from "../components/Notice";
 import {
   CATEGORY_CHOICES,
   CHANNEL_CHOICES,
-  GENDER_CHOICES,
   REGION_CHOICES,
 } from "../constants/choices";
 import { CARD_CLASS, INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from "../constants/ui";
@@ -30,7 +29,6 @@ function emptyForm() {
     location: "",
     merchant_latitude: "",
     merchant_longitude: "",
-    customer_gender: "",
     customer_birth_date: "",
     customer_profession: "",
     customer_city: "",
@@ -52,7 +50,6 @@ const PRESETS = {
     channel: "card",
     timestamp: "2026-10-11T14:30:00Z",
     category: "achats",
-    customer_gender: "F",
     customer_birth_date: "1995-03-20",
     customer_city: "Dakar",
     customer_region: "Dakar",
@@ -71,7 +68,6 @@ const PRESETS = {
     channel: "online",
     timestamp: "2026-10-11T23:30:00Z",
     category: "courses",
-    customer_gender: "M",
     customer_birth_date: "1963-05-02",
     customer_city: "Richard-Toll",
     customer_region: "Fatick",
@@ -230,9 +226,6 @@ export default function NewTransactionPage() {
           <section className={CARD_CLASS}>
             <h2 className="text-sm font-medium text-ink-primary">Client</h2>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Genre" name="customer_gender" {...fieldProps}>
-                <Options choices={GENDER_CHOICES} placeholder="— Choisir —" />
-              </Field>
               <Field label="Date de naissance" name="customer_birth_date" type="date" {...fieldProps} />
               <Field label="Profession" name="customer_profession" {...fieldProps} />
               <Field label="Ville" name="customer_city" {...fieldProps} />
