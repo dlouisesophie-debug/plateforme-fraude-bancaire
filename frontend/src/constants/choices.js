@@ -32,11 +32,6 @@ export const ROLE_CHOICES = [
   { value: "agent", label: "Agent Financier" },
 ];
 
-export const GENDER_CHOICES = [
-  { value: "F", label: "Femme" },
-  { value: "M", label: "Homme" },
-];
-
 export const ALGORITHM_CHOICES = [
   { value: "logistic_regression", label: "Régression logistique" },
   { value: "random_forest", label: "Random Forest" },
@@ -46,6 +41,17 @@ export const ALGORITHM_CHOICES = [
 export const REPORT_TYPE_CHOICES = [
   { value: "pdf", label: "PDF" },
   { value: "csv", label: "CSV" },
+];
+
+// EF-20 : actions nommées du journal d'audit. Les autres écritures arrivent
+// sous la forme "MÉTHODE /chemin" et s'affichent telles quelles (labelFor
+// retombe sur la valeur brute si elle n'est pas dans cette liste).
+export const AUDIT_ACTION_CHOICES = [
+  { value: "LOGIN_SUCCESS", label: "Connexion réussie" },
+  { value: "LOGIN_FAILED", label: "Connexion échouée" },
+  { value: "USER_CREATED", label: "Compte créé" },
+  { value: "USER_UPDATED", label: "Compte modifié" },
+  { value: "USER_DELETED", label: "Compte supprimé" },
 ];
 
 // Catégories et régions connues du pipeline ML (pipeline["categories_connues"]

@@ -8,6 +8,7 @@ import AlertsPage from "./pages/AlertsPage";
 import ReportsPage from "./pages/ReportsPage";
 import UsersPage from "./pages/UsersPage";
 import ModelPage from "./pages/ModelPage";
+import AuditPage from "./pages/AuditPage";
 import Layout from "./components/Layout";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { NAV_ITEMS, canAccess } from "./constants/roles";
@@ -49,6 +50,7 @@ const ROUTES = [
   { path: "/reports", element: <ReportsPage />, roles: rolesFor("/reports") },
   { path: "/users", element: <UsersPage />, roles: rolesFor("/users") },
   { path: "/model", element: <ModelPage />, roles: rolesFor("/model") },
+  { path: "/audit", element: <AuditPage />, roles: rolesFor("/audit") },
 ];
 
 export default function App() {
