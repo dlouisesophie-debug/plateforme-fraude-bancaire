@@ -1,7 +1,7 @@
 """
 training.py
 ===========
-Entrainement reproductible du modele FraudGuard (CDC 3.2, Phase 6).
+Entrainement reproductible du modele XelWóor (CDC 3.2, Phase 6).
 Reproduit et corrige le notebook final (FraudGuard_ML_03_Pipeline_Final.ipynb).
 
 Usage (depuis le dossier ml/src) :
@@ -426,7 +426,7 @@ def export_model(model, path: str):
 
 def main(argv=None):
     ici = Path(__file__).resolve().parent
-    p = argparse.ArgumentParser(description="Entrainement FraudGuard")
+    p = argparse.ArgumentParser(description="Entrainement XelWóor")
     p.add_argument("--data", default=str(ici.parent / "data" / "raw" / "fraudTest_senegal.csv"))
     p.add_argument("--sortie-modeles", default=str(ici.parent / "models"))
     p.add_argument("--sortie-rapports", default=str(ici.parent / "reports"))

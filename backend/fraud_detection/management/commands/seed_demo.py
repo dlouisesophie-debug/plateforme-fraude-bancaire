@@ -150,7 +150,7 @@ class Command(BaseCommand):
             user, cree = User.objects.get_or_create(
                 username=username,
                 defaults={"role": role, "first_name": prenom, "last_name": "Démo",
-                          "email": f"{username}@fraudguard.local"},
+                          "email": f"{username}@xelwoor.local"},
             )
             if cree:
                 user.set_password(mot_de_passe)

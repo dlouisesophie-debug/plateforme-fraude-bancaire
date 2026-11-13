@@ -1,4 +1,4 @@
-# Backend — FraudGuard API
+# Backend — XelWóor API
 
 Responsable : Étudiant 1 (Software Architect / Backend Lead)
 

@@ -1,4 +1,4 @@
-# Frontend — FraudGuard Dashboard
+# Frontend — tableau de bord XelWóor
 
 Responsable : Étudiant 3 (Senior React Developer / UX)
 Également responsable unique des fusions Git — voir `docs/git/Guide_Git_GitHub_FraudGuard.docx`.

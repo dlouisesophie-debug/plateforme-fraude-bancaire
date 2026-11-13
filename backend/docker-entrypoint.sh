@@ -1,5 +1,5 @@
 #!/bin/sh
-# Démarrage du conteneur backend FraudGuard (docker compose ET Render).
+# Démarrage du conteneur backend XelWóor (docker compose ET Render).
 #
 #   1. migrate                         : schéma PostgreSQL à jour
 #   2. activer_modele_ml               : enregistre/active le pipeline ML

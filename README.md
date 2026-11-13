@@ -1,4 +1,4 @@
-# FraudGuard — Plateforme de Détection de Fraude Bancaire
+# XelWóor — Plateforme de Détection de Fraude Bancaire
 
 Projet académique (Agile/Scrum) — équipe de 4 étudiants.
 

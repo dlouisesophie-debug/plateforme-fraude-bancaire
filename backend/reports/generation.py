@@ -75,7 +75,7 @@ def generer_pdf(report, chemin):
     auteur = report.generated_by.get_full_name() or report.generated_by.username if report.generated_by else "—"
 
     elements = [
-        Paragraph(f"FraudGuard — {report.title}", styles["Title"]),
+        Paragraph(f"XelWóor — {report.title}", styles["Title"]),
         Paragraph(
             f"{periode} · généré le {timezone.localtime():%d/%m/%Y à %H:%M} par {auteur}",
             styles["Normal"],
@@ -129,7 +129,7 @@ def generer_pdf(report, chemin):
     document = SimpleDocTemplate(
         str(chemin), pagesize=landscape(A4),
         leftMargin=1.5 * cm, rightMargin=1.5 * cm, topMargin=1.5 * cm, bottomMargin=1.5 * cm,
-        title=report.title, author="FraudGuard",
+        title=report.title, author="XelWóor",
     )
     document.build(elements)
 

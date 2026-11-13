@@ -1,5 +1,5 @@
 -- =========================================================================
--- FraudGuard — Script de création de la base de données PostgreSQL
+-- XelWóor — Script de création de la base de données PostgreSQL
 -- Version 1.0 — Aligné avec le CDC v2.1 et les diagrammes UML corrigés
 -- =========================================================================
 

@@ -1,4 +1,4 @@
-name: CI FraudGuard
+name: CI XelWóor
 
 on:
   pull_request:
