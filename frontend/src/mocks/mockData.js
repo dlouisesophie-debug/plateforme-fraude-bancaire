@@ -31,9 +31,9 @@ export const ACTIVE_MODEL_VERSION = "1.0.0";
 export const DECISION_THRESHOLD = 0.1126;
 
 export const MOCK_USERS = [
-  { id: 1, username: "admin", first_name: "Awa", last_name: "Ndiaye", email: "admin@fraudguard.local", role: "admin", role_label: "Administrateur", is_active: true },
-  { id: 2, username: "analyste", first_name: "Moussa", last_name: "Diop", email: "analyste@fraudguard.local", role: "analyst", role_label: "Analyste Fraude", is_active: true },
-  { id: 3, username: "agent", first_name: "Fatou", last_name: "Sarr", email: "agent@fraudguard.local", role: "agent", role_label: "Agent Financier", is_active: true },
+  { id: 1, username: "admin", first_name: "Awa", last_name: "Ndiaye", email: "admin@xelwoor.local", role: "admin", role_label: "Administrateur", is_active: true },
+  { id: 2, username: "analyste", first_name: "Moussa", last_name: "Diop", email: "analyste@xelwoor.local", role: "analyst", role_label: "Analyste Fraude", is_active: true },
+  { id: 3, username: "agent", first_name: "Fatou", last_name: "Sarr", email: "agent@xelwoor.local", role: "agent", role_label: "Agent Financier", is_active: true },
 ];
 
 export const mlModels = [

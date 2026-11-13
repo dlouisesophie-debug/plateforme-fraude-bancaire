@@ -1,4 +1,4 @@
-# Blueprint Render — FraudGuard (CDC §11 : déploiement public via Docker)
+# Blueprint Render — XelWóor (CDC §11 : déploiement public via Docker)
 #
 # Render > New > Blueprint > choisir ce dépôt, branche main.
 # 3 ressources : PostgreSQL, API Django (Docker), frontend React (Docker + Nginx).

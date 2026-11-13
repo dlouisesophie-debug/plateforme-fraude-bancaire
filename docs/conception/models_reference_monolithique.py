@@ -1,5 +1,5 @@
 """
-FraudGuard — Modèles Django
+XelWóor — Modèles Django
 Traduction du MCD/MLD PostgreSQL en modèles Django ORM.
 Compatible Django + Django REST Framework + Simple JWT.
 """
