@@ -270,7 +270,8 @@ export default function UsersPage() {
       <Notice className="mt-4">{error}</Notice>
 
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
-        <div className="overflow-x-auto">
+        {/* relative : garde le libellé sr-only « Actions » (position absolue) dans la zone de défilement. */}
+        <div className="relative overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-canvas text-xs font-medium uppercase tracking-wide text-ink-secondary">
               <tr>
