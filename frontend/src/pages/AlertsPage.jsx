@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import Layout from "../components/Layout";
 import StatusBadge from "../components/StatusBadge";
@@ -119,6 +119,9 @@ function AlertItem({ alert, onUpdated, onError }) {
 }
 
 export default function AlertsPage() {
+  // ?id=12 : ouvre directement une alerte (lien « Traiter l'alerte » de la fiche transaction).
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get("id");
   const [alerts, setAlerts] = useState([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -132,15 +135,21 @@ export default function AlertsPage() {
     setLoading(true);
     setError(null);
 
-    api
-      .get("/alerts/", { params: { page, status: status || undefined, severity: severity || undefined } })
-      .then((res) => {
+    const request = focusId
+      ? api.get(`/alerts/${focusId}/`).then((res) => ({ results: [res.data], count: 1 }))
+      : api
+          .get("/alerts/", { params: { page, status: status || undefined, severity: severity || undefined } })
+          .then((res) => res.data);
+
+    request
+      .then((data) => {
         if (cancelled) return;
-        setAlerts(res.data.results || []);
-        setCount(res.data.count || 0);
+        setAlerts(data.results || []);
+        setCount(data.count || 0);
       })
-      .catch(() => {
-        if (!cancelled) setError("Impossible de charger les alertes.");
+      .catch((err) => {
+        if (cancelled) return;
+        setError(focusId && err.response?.status === 404 ? `Alerte #${focusId} introuvable.` : "Impossible de charger les alertes.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -149,7 +158,7 @@ export default function AlertsPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, status, severity]);
+  }, [focusId, page, status, severity]);
 
   function handleFilterChange(setter) {
     return (e) => {
@@ -164,26 +173,35 @@ export default function AlertsPage() {
 
   return (
     <Layout>
-      <h1 className="font-display text-2xl font-semibold text-ink-primary">Alertes</h1>
+      {focusId && (
+        <Link to="/alerts" className="text-sm font-medium text-brand hover:underline">
+          ← Toutes les alertes
+        </Link>
+      )}
+      <h1 className={`font-display text-2xl font-semibold text-ink-primary ${focusId ? "mt-3" : ""}`}>
+        {focusId ? `Alerte #${focusId}` : "Alertes"}
+      </h1>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <select value={status} onChange={handleFilterChange(setStatus)} aria-label="Statut" className={SELECT_CLASS}>
-          <option value="">Tous les statuts</option>
-          {ALERT_STATUS_CHOICES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <select value={severity} onChange={handleFilterChange(setSeverity)} aria-label="Sévérité" className={SELECT_CLASS}>
-          <option value="">Toutes les sévérités</option>
-          {SEVERITY_CHOICES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!focusId && (
+        <div className="mt-6 flex flex-wrap gap-3">
+          <select value={status} onChange={handleFilterChange(setStatus)} aria-label="Statut" className={SELECT_CLASS}>
+            <option value="">Tous les statuts</option>
+            {ALERT_STATUS_CHOICES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <select value={severity} onChange={handleFilterChange(setSeverity)} aria-label="Sévérité" className={SELECT_CLASS}>
+            <option value="">Toutes les sévérités</option>
+            {SEVERITY_CHOICES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <Notice className="mt-4">{error}</Notice>
 
@@ -196,7 +214,7 @@ export default function AlertsPage() {
           )}
           {loading && <li className="px-4 py-6 text-center text-sm text-ink-secondary">Chargement...</li>}
         </ul>
-        {!loading && count > 0 && (
+        {!loading && !focusId && count > 0 && (
           <Pagination page={page} pageSize={PAGE_SIZE} count={count} onPageChange={setPage} />
         )}
       </div>

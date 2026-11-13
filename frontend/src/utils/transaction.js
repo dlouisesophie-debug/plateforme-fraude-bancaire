@@ -32,7 +32,6 @@ export const TRANSACTION_FIELD_GROUPS = [
   {
     title: "Client",
     fields: [
-      ["customer_gender", "Genre"],
       ["customer_birth_date", "Date de naissance"],
       ["customer_profession", "Profession"],
       ["customer_city", "Ville"],

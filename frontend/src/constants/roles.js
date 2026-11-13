@@ -7,6 +7,7 @@ export const NAV_ITEMS = [
   { to: "/reports", label: "Rapports", roles: ["admin", "agent"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
   { to: "/model", label: "Modèle IA", roles: ["admin"] },
+  { to: "/audit", label: "Audit", roles: ["admin"] },
 ];
 
 // Un superutilisateur Django sans rôle métier est traité comme un admin,

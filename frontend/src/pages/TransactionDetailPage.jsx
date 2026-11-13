@@ -6,10 +6,75 @@ import ScorePanel from "../components/ScorePanel";
 import Notice from "../components/Notice";
 import { useAuth } from "../hooks/useAuth";
 import { canAccess } from "../constants/roles";
-import { CATEGORY_CHOICES, CHANNEL_CHOICES, GENDER_CHOICES, labelFor } from "../constants/choices";
-import { CARD_CLASS } from "../constants/ui";
-import { formatAmount, formatDate, formatDateTime, formatNumber } from "../utils/format";
+import { CATEGORY_CHOICES, CHANNEL_CHOICES, TRANSACTION_STATUS_CHOICES, labelFor } from "../constants/choices";
+import { CARD_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, SELECT_CLASS } from "../constants/ui";
+import { apiErrorMessage, formatAmount, formatDate, formatDateTime, formatNumber } from "../utils/format";
 import { TRANSACTION_FIELD_GROUPS } from "../utils/transaction";
+
+const REQUALIFY_ROLES = ["admin", "analyst"];
+
+// EF-13 : un admin/analyste peut changer le statut d'une transaction. L'API
+// reclasse elle-même l'alerte liée (confirmed/rejected) si elle était ouverte.
+function Requalify({ transaction, onUpdated }) {
+  const options = TRANSACTION_STATUS_CHOICES.filter((c) => c.value !== transaction.status);
+  const [newStatus, setNewStatus] = useState(options[0]?.value ?? "");
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function handleConfirm() {
+    setSaving(true);
+    setError(null);
+    try {
+      await api.patch(`/transactions/${transaction.id}/`, { status: newStatus });
+      await onUpdated();
+      setConfirming(false);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Requalification impossible."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className={`${CARD_CLASS} mt-4`}>
+      <h2 className="text-sm font-medium text-ink-primary">Requalifier</h2>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <select
+          value={newStatus}
+          onChange={(e) => {
+            setNewStatus(e.target.value);
+            setConfirming(false);
+          }}
+          disabled={saving}
+          aria-label="Nouveau statut"
+          className={SELECT_CLASS}
+        >
+          {options.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        {confirming ? (
+          <>
+            <button type="button" onClick={handleConfirm} disabled={saving} className={PRIMARY_BUTTON}>
+              {saving ? "Enregistrement..." : "Confirmer"}
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} disabled={saving} className={SECONDARY_BUTTON}>
+              Annuler
+            </button>
+          </>
+        ) : (
+          <button type="button" onClick={() => setConfirming(true)} className={SECONDARY_BUTTON}>
+            Requalifier
+          </button>
+        )}
+      </div>
+      <Notice className="mt-3">{error}</Notice>
+    </section>
+  );
+}
 
 function formatField(key, value, transaction) {
   if (value === null || value === undefined || value === "") return "—";
@@ -20,8 +85,6 @@ function formatField(key, value, transaction) {
       return labelFor(CHANNEL_CHOICES, value);
     case "category":
       return labelFor(CATEGORY_CHOICES, value);
-    case "customer_gender":
-      return labelFor(GENDER_CHOICES, value);
     case "timestamp":
     case "created_at":
       return formatDateTime(value);
@@ -41,6 +104,10 @@ export default function TransactionDetailPage() {
   const { user } = useAuth();
   const [transaction, setTransaction] = useState(null);
   const [error, setError] = useState(null);
+
+  function reload() {
+    return api.get(`/transactions/${id}/`).then((res) => setTransaction(res.data));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +148,8 @@ export default function TransactionDetailPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <ScorePanel transaction={transaction} showAlertLink={canAccess(user, ["admin", "analyst"])} />
+              <ScorePanel transaction={transaction} showAlertLink={canAccess(user, REQUALIFY_ROLES)} />
+              {canAccess(user, REQUALIFY_ROLES) && <Requalify transaction={transaction} onUpdated={reload} />}
             </div>
             <div className="space-y-4 lg:col-span-2">
               {TRANSACTION_FIELD_GROUPS.map((group) => (

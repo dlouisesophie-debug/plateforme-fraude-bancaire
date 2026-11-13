@@ -58,7 +58,7 @@ export default function ScorePanel({ transaction, showAlertLink = false }) {
       </dl>
 
       {showAlertLink && alertId && (
-        <Link to="/alerts" className="mt-4 inline-block text-sm font-medium text-brand hover:underline">
+        <Link to={`/alerts?id=${alertId}`} className="mt-4 inline-block text-sm font-medium text-brand hover:underline">
           Traiter l'alerte →
         </Link>
       )}
