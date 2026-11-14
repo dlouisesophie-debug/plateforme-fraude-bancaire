@@ -125,6 +125,15 @@ class TransactionCorrectionsTests(APITestCase):
         self.assertEqual(ligne["alert_status"], "open")
         self.assertEqual(ligne["status"], "under_review")
 
+    def test_nom_de_lagent_qui_a_saisi(self):
+        reponse = self.creer(0.02, transaction_id="T-SAISIE").json()
+        self.assertEqual(reponse["created_by"], self.agent.id)
+        self.assertEqual(reponse["created_by_username"], "ag")
+        self.client.force_authenticate(self.analyste)
+        self.assertEqual(self.client.get(URL).json()["results"][0]["created_by_username"], "ag")
+        Transaction.objects.update(created_by=None)
+        self.assertIsNone(self.client.get(URL).json()["results"][0]["created_by_username"])
+
     def test_transaction_non_scoree_a_un_score_nul(self):
         Transaction.objects.create(transaction_id="X", amount=1, channel="card", timestamp="2026-10-11T10:00:00Z")
         self.client.force_authenticate(self.agent)
