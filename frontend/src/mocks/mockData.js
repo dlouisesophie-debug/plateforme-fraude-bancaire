@@ -31,9 +31,9 @@ export const ACTIVE_MODEL_VERSION = "1.0.0";
 export const DECISION_THRESHOLD = 0.1126;
 
 export const MOCK_USERS = [
-  { id: 1, username: "admin", first_name: "Awa", last_name: "Ndiaye", email: "admin@fraudguard.local", role: "admin", role_label: "Administrateur", is_active: true },
-  { id: 2, username: "analyste", first_name: "Moussa", last_name: "Diop", email: "analyste@fraudguard.local", role: "analyst", role_label: "Analyste Fraude", is_active: true },
-  { id: 3, username: "agent", first_name: "Fatou", last_name: "Sarr", email: "agent@fraudguard.local", role: "agent", role_label: "Agent Financier", is_active: true },
+  { id: 1, username: "admin", first_name: "Awa", last_name: "Ndiaye", email: "admin@xelwoor.local", role: "admin", role_label: "Administrateur", is_active: true },
+  { id: 2, username: "analyste", first_name: "Moussa", last_name: "Diop", email: "analyste@xelwoor.local", role: "analyst", role_label: "Analyste Fraude", is_active: true },
+  { id: 3, username: "agent", first_name: "Fatou", last_name: "Sarr", email: "agent@xelwoor.local", role: "agent", role_label: "Agent Financier", is_active: true },
 ];
 
 export const mlModels = [
@@ -106,7 +106,6 @@ function buildTransactions(total) {
       timestamp,
       status,
       category: pick(CATEGORIES),
-      customer_gender: pick(["F", "M"]),
       customer_birth_date: `19${60 + Math.floor(random() * 40)}-0${1 + Math.floor(random() * 9)}-1${Math.floor(random() * 9)}`,
       customer_city: place.city,
       customer_region: place.region,
@@ -158,3 +157,98 @@ export const reports = [
     created_at: "2026-10-01T08:00:00Z",
   },
 ];
+
+// EF-20 : journal d'audit (connexions, gestion des comptes, autres écritures).
+const AUDIT_IPS = ["102.23.45.12", "41.82.11.5", "196.192.44.3", "10.0.0.15", "154.72.9.201"];
+const AUDIT_WRITE_ROUTES = [
+  ["POST", "/api/transactions/"],
+  ["PATCH", "/api/transactions/12/"],
+  ["POST", "/api/alerts/5/confirm/"],
+  ["POST", "/api/alerts/8/reject/"],
+  ["POST", "/api/reports/"],
+  ["DELETE", "/api/reports/3/"],
+];
+
+function buildAuditLog(total) {
+  const now = Date.now();
+  const kinds = [
+    "login_success",
+    "login_success",
+    "login_success",
+    "login_failed",
+    "write",
+    "write",
+    "write",
+    "user_created",
+    "user_updated",
+    "user_deleted",
+  ];
+  const entries = Array.from({ length: total }, (_, i) => {
+    const id = total - i;
+    const createdAt = new Date(now - i * 3 * 3600 * 1000 - between(0, 3600 * 1000)).toISOString();
+    const actor = pick(MOCK_USERS);
+    const ip = pick(AUDIT_IPS);
+    const kind = pick(kinds);
+
+    if (kind === "login_success") {
+      return { id, user: actor.id, action: "LOGIN_SUCCESS", ip_address: ip, details: { username: actor.username }, created_at: createdAt };
+    }
+    if (kind === "login_failed") {
+      return {
+        id,
+        user: null,
+        action: "LOGIN_FAILED",
+        ip_address: ip,
+        details: { username: pick([actor.username, "compte_inconnu"]), status_code: 401 },
+        created_at: createdAt,
+      };
+    }
+    if (kind === "user_created") {
+      const target = pick(MOCK_USERS);
+      return {
+        id,
+        user: actor.id,
+        action: "USER_CREATED",
+        ip_address: ip,
+        details: { target_username: target.username, role: target.role },
+        created_at: createdAt,
+      };
+    }
+    if (kind === "user_updated") {
+      const target = pick(MOCK_USERS);
+      return {
+        id,
+        user: actor.id,
+        action: "USER_UPDATED",
+        ip_address: ip,
+        details: { target_username: target.username, changes: { role: { avant: "agent", apres: "analyst" } } },
+        created_at: createdAt,
+      };
+    }
+    if (kind === "user_deleted") {
+      const target = pick(MOCK_USERS);
+      return {
+        id,
+        user: actor.id,
+        action: "USER_DELETED",
+        ip_address: ip,
+        details: { target_username: target.username, role: target.role },
+        created_at: createdAt,
+      };
+    }
+    const [method, routePath] = pick(AUDIT_WRITE_ROUTES);
+    return {
+      id,
+      user: actor.id,
+      action: `${method} ${routePath}`,
+      ip_address: ip,
+      details: { status_code: pick([200, 201, 204, 400]) },
+      created_at: createdAt,
+    };
+  });
+  // Démontre le cas « compte supprimé depuis » (EF-20 : afficher "#<id>").
+  if (entries[5]) entries[5].user = 999;
+  return entries;
+}
+
+export const auditLog = buildAuditLog(32);

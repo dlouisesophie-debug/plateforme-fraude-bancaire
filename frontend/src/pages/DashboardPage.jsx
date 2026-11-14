@@ -19,7 +19,7 @@ import StatTile from "../components/StatTile";
 import DateRangeFilter from "../components/DateRangeFilter";
 import Notice from "../components/Notice";
 import { CHANNEL_CHOICES, labelFor } from "../constants/choices";
-import { CARD_CLASS } from "../constants/ui";
+import { CARD_CLASS, SELECT_CLASS } from "../constants/ui";
 import { formatAmount, formatDate, formatNumber, formatPercent } from "../utils/format";
 
 const COLORS = {
@@ -143,6 +143,7 @@ function ConfusionMatrix({ confusion }) {
 export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [period, setPeriod] = useState({ after: "", before: "" });
+  const [channel, setChannel] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -153,7 +154,11 @@ export default function DashboardPage() {
 
     api
       .get("/dashboard/stats/", {
-        params: { date_after: period.after || undefined, date_before: period.before || undefined },
+        params: {
+          date_after: period.after || undefined,
+          date_before: period.before || undefined,
+          channel: channel || undefined,
+        },
       })
       .then((res) => {
         if (!cancelled) setStats(normalizeStats(res.data));
@@ -168,13 +173,23 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [period.after, period.before]);
+  }, [period.after, period.before, channel]);
 
   return (
     <Layout>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-semibold text-ink-primary">Dashboard</h1>
-        <DateRangeFilter after={period.after} before={period.before} onChange={setPeriod} />
+        <div className="flex flex-wrap items-center gap-3">
+          <select value={channel} onChange={(e) => setChannel(e.target.value)} aria-label="Canal" className={SELECT_CLASS}>
+            <option value="">Tous les canaux</option>
+            {CHANNEL_CHOICES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <DateRangeFilter after={period.after} before={period.before} onChange={setPeriod} />
+        </div>
       </div>
 
       <Notice className="mt-6">{error}</Notice>

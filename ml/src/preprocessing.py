@@ -1,7 +1,7 @@
 """
 preprocessing.py
 =================
-Source de verite unique pour le pretraitement des transactions FraudGuard.
+Source de verite unique pour le pretraitement des transactions XelWóor.
 Reproduit exactement les etapes utilisees a l'entrainement (voir notebooks/)
 et doit rester synchronise avec ce que le backend utilise pour scorer une
 transaction en production.

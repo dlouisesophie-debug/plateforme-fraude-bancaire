@@ -1,4 +1,4 @@
-# Guide de déploiement — FraudGuard (Étudiant 4, DevOps)
+# Guide de déploiement — XelWóor (Étudiant 4, DevOps)
 
 Exigence couverte : CDC §11 « L'application est déployée et accessible publiquement
 (Render) via Docker », §6 « HTTPS obligatoire, protection CSRF/CORS configurée ».

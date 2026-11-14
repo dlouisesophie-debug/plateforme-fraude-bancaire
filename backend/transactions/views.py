@@ -35,7 +35,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
     queryset = (
         Transaction.objects.all()
-        .select_related("prediction__ml_model", "prediction__alert")
+        .select_related("prediction__ml_model", "prediction__alert", "created_by")
         .order_by("-timestamp")
     )
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]

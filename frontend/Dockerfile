@@ -1,4 +1,4 @@
-# Image frontend FraudGuard : build de production React servi par Nginx.
+# Image frontend XelWóor : build de production React servi par Nginx.
 #
 # Create React App intègre les variables REACT_APP_* AU MOMENT DU BUILD :
 # elles sont donc passées en arguments de build (docker compose : build.args ;

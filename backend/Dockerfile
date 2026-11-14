@@ -1,4 +1,4 @@
-# Image backend FraudGuard (Django REST + modèle ML), prête pour la production.
+# Image backend XelWóor (Django REST + modèle ML), prête pour la production.
 #
 # Le contexte de build est la RACINE du dépôt (et non backend/) pour que
 # l'image embarque aussi le modèle ML (ml/models) et son code (ml/src) :

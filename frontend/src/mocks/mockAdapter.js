@@ -2,15 +2,16 @@
 // Activé via REACT_APP_USE_MOCKS=true dans frontend/.env.
 import { AxiosError } from "axios";
 import {
-  ACTIVE_MODEL_VERSION,
   DECISION_THRESHOLD,
   MOCK_USERS,
   alerts,
+  auditLog,
   mlModels,
   reports,
   severityFor,
   transactions,
 } from "./mockData";
+import { ROLE_CHOICES, labelFor } from "../constants/choices";
 
 const PAGE_SIZE = 20;
 const LATENCY_MS = 300;
@@ -61,6 +62,16 @@ function filterBy(items, params, fields) {
   return items.filter((item) => fields.every((f) => !params[f] || item[f] === params[f]));
 }
 
+// "user" est un identifiant numérique : comparaison en texte pour éviter
+// les soucis de type face aux query params (toujours des chaînes).
+function filterAuditLog(items, params) {
+  return items.filter((item) => {
+    if (params.action && item.action !== params.action) return false;
+    if (params.user && String(item.user) !== params.user) return false;
+    return true;
+  });
+}
+
 function filterByPeriod(items, params, field = "timestamp") {
   return items.filter((item) => {
     const day = String(item[field]).slice(0, 10);
@@ -81,6 +92,12 @@ function currentUser(config) {
     return MOCK_USERS[0];
   }
 }
+
+const activeModel = () => mlModels.find((m) => m.is_active);
+const isAdmin = (user) => user.role === "admin" || user.is_superuser;
+const notFound = (config) => respond(config, 404, { detail: "Pas trouvé." });
+const forbidden = (config) =>
+  respond(config, 403, { detail: "Vous n'avez pas la permission d'effectuer cette action." });
 
 const alertForTransaction = (t) => alerts.find((a) => a.transaction === t.id);
 
@@ -136,7 +153,7 @@ function transactionsCsv(items) {
 }
 
 function dashboardStats(params) {
-  const items = filterByPeriod(transactions, params);
+  const items = filterBy(filterByPeriod(transactions, params), params, ["channel"]);
   const total = items.length;
   const byStatus = { pending: 0, legitimate: 0, fraudulent: 0, under_review: 0 };
   items.forEach((t) => {
@@ -170,10 +187,14 @@ function dashboardStats(params) {
 
   const ids = new Set(items.map((t) => t.id));
   const ratio = (n, d) => (d ? Number((n / d).toFixed(4)) : null);
-  const model = mlModels.find((m) => m.is_active);
+  const model = activeModel();
   // Même forme que backend/dashboard/services.py (calculer_statistiques).
   return {
-    filters: { date_after: params.date_after || null, date_before: params.date_before || null, channel: null },
+    filters: {
+      date_after: params.date_after || null,
+      date_before: params.date_before || null,
+      channel: params.channel || null,
+    },
     kpis: {
       total_transactions: total,
       fraudulent_transactions: byStatus.fraudulent,
@@ -218,7 +239,11 @@ function handle(config) {
     if (!body.username || !body.password) {
       return respond(config, 401, { detail: "Aucun compte actif n'a été trouvé avec les identifiants fournis" });
     }
-    const user = MOCK_USERS.find((u) => u.username === body.username) || {
+    const existing = MOCK_USERS.find((u) => u.username === body.username);
+    if (existing && !existing.is_active) {
+      return respond(config, 401, { detail: "Aucun compte actif n'a été trouvé avec les identifiants fournis" });
+    }
+    const user = existing || {
       ...MOCK_USERS[0],
       id: 99,
       username: body.username,
@@ -252,6 +277,25 @@ function handle(config) {
     return respond(config, 201, user);
   }
 
+  if (method === "patch" && (match = path.match(/^\/auth\/users\/(\d+)\/$/))) {
+    const user = MOCK_USERS.find((u) => u.id === Number(match[1]));
+    if (!user) return notFound(config);
+    Object.assign(user, body);
+    if (body.role) user.role_label = labelFor(ROLE_CHOICES, body.role);
+    return respond(config, 200, user);
+  }
+
+  if (method === "delete" && (match = path.match(/^\/auth\/users\/(\d+)\/$/))) {
+    const index = MOCK_USERS.findIndex((u) => u.id === Number(match[1]));
+    if (index === -1) return notFound(config);
+    MOCK_USERS.splice(index, 1);
+    return respond(config, 204, null);
+  }
+
+  if (method === "get" && path === "/audit/") {
+    return respond(config, 200, paginate(filterAuditLog(auditLog, params), path, params));
+  }
+
   if (method === "get" && path === "/dashboard/stats/") {
     return respond(config, 200, dashboardStats(params));
   }
@@ -280,7 +324,7 @@ function handle(config) {
       created_at: now,
     };
     transaction.fraud_probability = fakeScore(transaction);
-    transaction.model_version = ACTIVE_MODEL_VERSION;
+    transaction.model_version = activeModel()?.version ?? null;
     const isFraud = transaction.fraud_probability >= DECISION_THRESHOLD;
     transaction.status = isFraud ? "under_review" : "legitimate";
     transactions.unshift(transaction);
@@ -305,8 +349,34 @@ function handle(config) {
     return transaction ? respond(config, 200, serializeTransaction(transaction)) : respond(config, 404, { detail: "Pas trouvé." });
   }
 
+  // EF-13 : requalification (admin/analyste). Comme le backend, on reclasse
+  // l'alerte liée si elle est encore ouverte.
+  if (method === "patch" && (match = path.match(/^\/transactions\/(\d+)\/$/))) {
+    const transaction = transactions.find((t) => t.id === Number(match[1]));
+    if (!transaction) return notFound(config);
+    if (!isAdmin(currentUser(config)) && currentUser(config).role !== "analyst") return forbidden(config);
+    if (body.status) {
+      transaction.status = body.status;
+      const alert = alertForTransaction(transaction);
+      if (alert && alert.status === "open") {
+        if (body.status === "fraudulent") alert.status = "confirmed";
+        else if (body.status === "legitimate") alert.status = "rejected";
+        if (alert.status !== "open") {
+          alert.resolved_at = new Date().toISOString();
+          alert.assigned_to = currentUser(config).id;
+        }
+      }
+    }
+    return respond(config, 200, serializeTransaction(transaction));
+  }
+
   if (method === "get" && path === "/alerts/") {
     return respond(config, 200, paginate(filterBy(alerts, params, ["status", "severity"]).map(serializeAlert), path, params));
+  }
+
+  if (method === "get" && (match = path.match(/^\/alerts\/(\d+)\/$/))) {
+    const alert = alerts.find((a) => a.id === Number(match[1]));
+    return alert ? respond(config, 200, serializeAlert(alert)) : notFound(config);
   }
 
   if (method === "post" && (match = path.match(/^\/alerts\/(\d+)\/(confirm|reject)\/$/))) {
@@ -349,6 +419,14 @@ function handle(config) {
     };
     reports.unshift(report);
     return respond(config, 201, report);
+  }
+
+  if (method === "delete" && (match = path.match(/^\/reports\/(\d+)\/$/))) {
+    if (!isAdmin(currentUser(config))) return forbidden(config);
+    const index = reports.findIndex((r) => r.id === Number(match[1]));
+    if (index === -1) return notFound(config);
+    reports.splice(index, 1);
+    return respond(config, 204, null);
   }
 
   if (method === "get" && (match = path.match(/^\/reports\/(\d+)\/download\/$/))) {

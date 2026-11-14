@@ -37,6 +37,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     model_version = serializers.SerializerMethodField()
     alert_id = serializers.SerializerMethodField()
     alert_status = serializers.SerializerMethodField()
+    created_by_username = serializers.SerializerMethodField()
 
     class Meta:
         model = Transaction
@@ -67,6 +68,11 @@ class TransactionSerializer(serializers.ModelSerializer):
     def get_alert_status(self, obj):
         alerte = _alerte_de(_prediction_de(obj))
         return alerte.status if alerte else None
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_created_by_username(self, obj):
+        # Nom de l'agent ayant saisi la transaction (« Saisie par » sur la fiche).
+        return obj.created_by.username if obj.created_by else None
 
 
 class TransactionCreateSerializer(serializers.ModelSerializer):

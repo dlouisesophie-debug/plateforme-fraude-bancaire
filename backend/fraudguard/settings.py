@@ -1,5 +1,5 @@
 """
-Configuration Django — FraudGuard
+Configuration Django — XelWóor
 """
 
 import os
@@ -166,7 +166,7 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FraudGuard API",
+    "TITLE": "XelWóor API",
     "DESCRIPTION": "API de detection de fraude bancaire",
     "VERSION": "1.0.0",
     # Noms explicites pour les différents champs "status" dans Swagger.
