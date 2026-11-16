@@ -171,7 +171,8 @@ function PaymentNotice({ result, scoring }) {
   const id = <span className="whitespace-nowrap">{result.transaction_id}</span>;
   const transaction = (
     <>
-      {id} <span className="whitespace-nowrap">({formatTransactionAmount(result)})</span>
+      {/* « de » plutôt que des parenthèses : le montant mobile money contient déjà « (unité simulateur) ». */}
+      {id} de <span className="whitespace-nowrap">{formatTransactionAmount(result)}</span>
     </>
   );
   if (scoring.isFraud === true) {
