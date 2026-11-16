@@ -1,0 +1,48 @@
+{
+  "description": "type dans ['Retrait', 'Transfert'] et montant >= 462452.87 (unites du simulateur)",
+  "types_a_risque": [
+    "Retrait",
+    "Transfert"
+  ],
+  "seuil_montant": 462452.87,
+  "validation": {
+    "seuil": 462452.87,
+    "precision": 0.011592770403840724,
+    "recall": 0.5,
+    "f1_score": 0.02266015290773095,
+    "auc_roc": 0.8630116779592132,
+    "pr_auc": 0.020937050146089882,
+    "matrice_confusion": [
+      [
+        1200883,
+        69999
+      ],
+      [
+        821,
+        821
+      ]
+    ],
+    "n_echantillons": 1272524,
+    "n_fraudes": 1642
+  },
+  "test": {
+    "seuil": 462452.87,
+    "precision": 0.01095219325412467,
+    "recall": 0.47352404138770543,
+    "f1_score": 0.021409210363378693,
+    "auc_roc": 0.8595536117240121,
+    "pr_auc": 0.019122237451972345,
+    "matrice_confusion": [
+      [
+        1200623,
+        70258
+      ],
+      [
+        865,
+        778
+      ]
+    ],
+    "n_echantillons": 1272524,
+    "n_fraudes": 1643
+  }
+}

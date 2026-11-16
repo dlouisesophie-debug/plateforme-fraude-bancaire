@@ -4,7 +4,7 @@ categories et regions connues, cf. pipeline["categories_connues"]).
 
 - TRANSACTION_NORMALE : achat de 15 000 FCFA en journee -> score ~ 0.
 - TRANSACTION_FRAUDE  : 600 000 FCFA a 23h30, categorie "courses" -> le
-  modele la classe frauduleuse (probabilite ~ 1.0, seuil = 0.1126). Elle a
+  modele la classe frauduleuse (probabilite ~ 1.0, seuil = 0.0652). Elle a
   ete trouvee en interrogeant le vrai pipeline, pas en forcant le score.
 """
 

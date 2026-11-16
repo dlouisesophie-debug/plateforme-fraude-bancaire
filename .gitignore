@@ -33,3 +33,5 @@ ml/models/*.pkl
 .DS_Store
 .vscode/
 .idea/
+
+!ml/models/fraudguard_mobile_money_pipeline.joblib
