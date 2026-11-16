@@ -2,17 +2,19 @@
 Point d'integration entre le backend Django et le pipeline ML (dossier /ml).
 
 Fonctionnement :
-1. Le modele actif est recupere en base (MLModel.objects.get(is_active=True)),
-   son fichier .joblib charge depuis le chemin indique par son champ
-   `artifact_path` (relatif a settings.ML_MODELS_DIR), puis mis en cache en
-   memoire pour ne pas re-charger le pipeline a chaque transaction.
+1. Le modele actif de la bonne famille est recupere en base : famille
+   « mobile_money » pour une transaction du canal mobile money qui a un type
+   d'operation, famille « carte » pour tout le reste (comme avant). Sans
+   modele mobile money actif, on revient au modele carte. Son fichier .joblib
+   est charge depuis `artifact_path` (relatif a settings.ML_MODELS_DIR), puis
+   mis en cache en memoire (un pipeline par fichier).
 2. Le meme pretraitement que celui utilise a l'entrainement est applique via
-   ml/src/preprocessing.py (source de verite unique, voir ml/README.md) —
-   jamais duplique ici.
+   ml/src (preprocessing.py, predict.py ; source de verite unique, voir
+   ml/README.md) — jamais duplique ici.
 3. Une Prediction est creee ; si fraud_probability depasse le seuil de
    decision du modele (ou settings.FRAUD_ALERT_THRESHOLD en secours), une
    Alert est creee automatiquement avec une gravite calculee a partir du
-   score.
+   score. Chaque modele a son seuil unique : fraude ou non fraude.
 
 Pour activer un modele : `python manage.py activer_modele_ml ml_models/fraudguard_pipeline.joblib`
 (voir fraud_detection/management/commands/activer_modele_ml.py).
@@ -28,19 +30,16 @@ from .models import MLModel, Prediction
 
 logger = logging.getLogger(__name__)
 
-# Cache en memoire du pipeline ML charge (evite de relire le .joblib a
-# chaque requete). Cle : artifact_path du MLModel actif, pour recharger
-# automatiquement si le modele actif change.
-_PIPELINE_CACHE: dict = {"artifact_path": None, "pipeline": None}
+# Cache en memoire des pipelines ML charges (evite de relire le .joblib a
+# chaque requete). Cle : artifact_path du MLModel, pour que les modeles carte
+# et mobile money restent tous les deux en memoire.
+_PIPELINE_CACHE: dict = {}
 
 
 def _charger_pipeline(active_model: MLModel) -> dict:
-    """Charge (ou reutilise depuis le cache) le pipeline .joblib du modele actif."""
-    if (
-        _PIPELINE_CACHE["pipeline"] is not None
-        and _PIPELINE_CACHE["artifact_path"] == active_model.artifact_path
-    ):
-        return _PIPELINE_CACHE["pipeline"]
+    """Charge (ou reutilise depuis le cache) le pipeline .joblib d'un modele actif."""
+    if active_model.artifact_path in _PIPELINE_CACHE:
+        return _PIPELINE_CACHE[active_model.artifact_path]
 
     # predict.load_pipeline vient de ml/src, rendu importable par
     # fraud_detection/apps.py (sys.path.insert sur settings.ML_SRC_DIR).
@@ -51,9 +50,41 @@ def _charger_pipeline(active_model: MLModel) -> dict:
         chemin = os.path.join(settings.ML_MODELS_DIR, chemin)
 
     pipeline = load_pipeline(chemin)
-    _PIPELINE_CACHE["artifact_path"] = active_model.artifact_path
-    _PIPELINE_CACHE["pipeline"] = pipeline
+    _PIPELINE_CACHE[active_model.artifact_path] = pipeline
     return pipeline
+
+
+def _famille_de(transaction) -> str:
+    """Famille de modele a utiliser : mobile money seulement si le canal et le type d'operation le permettent."""
+    if transaction.channel == transaction.Channel.MOBILE_MONEY and transaction.operation_type:
+        return MLModel.Famille.MOBILE_MONEY
+    return MLModel.Famille.CARTE
+
+
+def _modele_actif(famille: str):
+    """
+    Modele actif de la famille demandee. Sans modele mobile money actif, la
+    transaction est scoree comme avant, par le modele carte (avec un message
+    dans les logs), pour ne jamais bloquer le scoring.
+    """
+    modele = MLModel.objects.filter(is_active=True, famille=famille).first()
+    if modele is None and famille != MLModel.Famille.CARTE:
+        logger.warning("Aucun modele %s actif : scoring par le modele carte.", famille)
+        modele = MLModel.objects.filter(is_active=True, famille=MLModel.Famille.CARTE).first()
+    return modele
+
+
+def _transaction_vers_dict_mobile_money(transaction) -> dict:
+    """
+    Variables du modele mobile money (contrat de donnees ML-4) : type
+    d'operation PaySim, montant tel que saisi (unite du simulateur, pas des
+    FCFA) et heure locale de la transaction (Dakar = UTC+0).
+    """
+    return {
+        "type": transaction.operation_type.upper(),
+        "montant": float(transaction.amount),
+        "heure": dj_timezone.localtime(transaction.timestamp).hour,
+    }
 
 
 def _transaction_vers_dict(transaction) -> dict:
@@ -106,7 +137,7 @@ def score_transaction(transaction):
     correspondante. Declenche une alerte si le score depasse le seuil de
     decision du modele.
     """
-    active_model = MLModel.objects.filter(is_active=True).first()
+    active_model = _modele_actif(_famille_de(transaction))
     if active_model is None:
         raise RuntimeError(
             "Aucun modele ML actif — executez "
@@ -117,22 +148,25 @@ def score_transaction(transaction):
 
     from predict import get_decision_threshold, predict_fraud_probability
 
-    transaction_dict = _transaction_vers_dict(transaction)
+    if active_model.famille == MLModel.Famille.MOBILE_MONEY:
+        transaction_dict = _transaction_vers_dict_mobile_money(transaction)
+    else:
+        transaction_dict = _transaction_vers_dict(transaction)
 
-    # Une categorie ou une region absente du jeu d'entrainement ne fait pas
-    # planter le modele (elle est simplement ignoree) mais fausse le score :
-    # on le signale dans les logs plutot que de le taire.
-    if transaction_dict["categorie"] not in pipeline.get("categories_connues", []):
-        logger.warning(
-            "Transaction %s : categorie %r inconnue du modele (connues : %s).",
-            transaction.transaction_id, transaction_dict["categorie"],
-            ", ".join(pipeline.get("categories_connues", [])),
-        )
-    if transaction_dict["region"] not in pipeline.get("regions_connues", []):
-        logger.warning(
-            "Transaction %s : region %r inconnue du modele.",
-            transaction.transaction_id, transaction_dict["region"],
-        )
+        # Une categorie ou une region absente du jeu d'entrainement ne fait pas
+        # planter le modele (elle est simplement ignoree) mais fausse le score :
+        # on le signale dans les logs plutot que de le taire.
+        if transaction_dict["categorie"] not in pipeline.get("categories_connues", []):
+            logger.warning(
+                "Transaction %s : categorie %r inconnue du modele (connues : %s).",
+                transaction.transaction_id, transaction_dict["categorie"],
+                ", ".join(pipeline.get("categories_connues", [])),
+            )
+        if transaction_dict["region"] not in pipeline.get("regions_connues", []):
+            logger.warning(
+                "Transaction %s : region %r inconnue du modele.",
+                transaction.transaction_id, transaction_dict["region"],
+            )
     fraud_probability = predict_fraud_probability(pipeline, transaction_dict)
 
     seuil = get_decision_threshold(pipeline, fallback=settings.FRAUD_ALERT_THRESHOLD)

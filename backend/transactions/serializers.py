@@ -32,6 +32,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     channel_label = serializers.CharField(source="get_channel_display", read_only=True)
+    operation_type_label = serializers.CharField(source="get_operation_type_display", read_only=True)
     fraud_probability = serializers.SerializerMethodField()
     is_fraud_predicted = serializers.SerializerMethodField()
     model_version = serializers.SerializerMethodField()
@@ -94,6 +95,16 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Le montant doit être strictement supérieur à 0.")
         return value
 
+    def validate(self, attrs):
+        # Le type d'opération est une variable du modèle mobile money : il n'a pas
+        # de sens pour un autre canal. Sans lui, une transaction mobile money est
+        # scorée comme avant par le modèle carte (voir fraud_detection.services).
+        if attrs.get("operation_type") and attrs.get("channel") != Transaction.Channel.MOBILE_MONEY:
+            raise serializers.ValidationError(
+                {"operation_type": "Le type d'opération ne concerne que le canal Mobile Money."}
+            )
+        return attrs
+
     def to_representation(self, instance):
         # La réponse à la création renvoie la transaction complète, score
         # inclus, pour que le frontend affiche le résultat du scoring.
@@ -104,7 +115,7 @@ class TransactionCreateSerializer(serializers.ModelSerializer):
         model = Transaction
         fields = [
             "transaction_id", "amount", "merchant", "device",
-            "location", "channel", "timestamp",
+            "location", "channel", "operation_type", "timestamp",
             "category",
             "customer_gender", "customer_birth_date", "customer_city",
             "customer_region", "customer_city_population", "customer_profession",
