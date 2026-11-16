@@ -8,11 +8,48 @@ import Pagination from "../components/Pagination";
 import Notice from "../components/Notice";
 import { ALERT_STATUS_CHOICES, CHANNEL_CHOICES, SEVERITY_CHOICES, labelFor } from "../constants/choices";
 import { INPUT_CLASS, SELECT_CLASS } from "../constants/ui";
-import { apiErrorMessage, formatAmount, formatDateTime } from "../utils/format";
+import { apiErrorMessage, formatAmount, formatDateTime, formatDuration } from "../utils/format";
 
 const PAGE_SIZE = 20;
 
-function AlertItem({ alert, onUpdated, onError }) {
+// Heure courante rafraîchie régulièrement, pour que « suspendu depuis » avance à l'écran.
+function useNow(intervalMs) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  return now;
+}
+
+// Conséquence sur le paiement (suspension temporaire) : alerte ouverte = paiement suspendu ;
+// fraude confirmée = paiement refusé ; alerte rejetée = paiement libéré. Les durées viennent
+// des dates de l'alerte (created_at = début de la suspension, resolved_at = décision).
+const DECIDED_PAYMENT = { confirmed: "Paiement refusé", rejected: "Paiement libéré" };
+
+function PaymentLine({ alert, now }) {
+  let state;
+  let detail = null;
+  if (alert.status === "open") {
+    state = "Paiement suspendu";
+    const since = formatDuration(alert.created_at, now);
+    if (since) detail = ` depuis ${since}`;
+  } else if (DECIDED_PAYMENT[alert.status]) {
+    state = DECIDED_PAYMENT[alert.status];
+    const delay = formatDuration(alert.created_at, alert.resolved_at);
+    if (delay) detail = ` · vérifié en ${delay}`;
+  } else {
+    return null;
+  }
+  return (
+    <p className="mt-1 text-sm">
+      <span className="font-medium text-ink-primary">{state}</span>
+      {detail && <span className="text-ink-secondary">{detail}</span>}
+    </p>
+  );
+}
+
+function AlertItem({ alert, now, onUpdated, onError }) {
   const [comment, setComment] = useState(alert.comment || "");
   const [busy, setBusy] = useState(null);
   const [saved, setSaved] = useState(false);
@@ -62,6 +99,7 @@ function AlertItem({ alert, onUpdated, onError }) {
             {" · "}
             {formatDateTime(alert.timestamp ?? alert.created_at)}
           </p>
+          <PaymentLine alert={alert} now={now} />
         </div>
         <div className="flex items-center gap-2 text-sm text-ink-secondary">
           {/* Une alerte n'est créée que si le modèle a prédit une fraude. */}
@@ -101,7 +139,7 @@ function AlertItem({ alert, onUpdated, onError }) {
                 onClick={() => decide("confirm")}
                 className="rounded-xl bg-danger px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-danger/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Confirmer la fraude
+                Confirmer la fraude (paiement refusé)
               </button>
               <button
                 type="button"
@@ -109,7 +147,7 @@ function AlertItem({ alert, onUpdated, onError }) {
                 onClick={() => decide("reject")}
                 className="rounded-xl border border-line px-3 py-1.5 text-xs font-medium text-ink-primary transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Rejeter
+                Rejeter (libérer le paiement)
               </button>
             </>
           )}
@@ -130,6 +168,7 @@ export default function AlertsPage() {
   const [severity, setSeverity] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const now = useNow(30000);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,7 +248,9 @@ export default function AlertsPage() {
       <div className="mt-4 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
         <ul className="divide-y divide-line">
           {!loading &&
-            alerts.map((a) => <AlertItem key={a.id} alert={a} onUpdated={handleUpdated} onError={setError} />)}
+            alerts.map((a) => (
+              <AlertItem key={a.id} alert={a} now={now} onUpdated={handleUpdated} onError={setError} />
+            ))}
           {!loading && alerts.length === 0 && !error && (
             <li className="px-4 py-6 text-center text-sm text-ink-secondary">Aucune alerte</li>
           )}
