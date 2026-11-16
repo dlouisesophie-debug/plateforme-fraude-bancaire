@@ -141,6 +141,39 @@ function Options({ choices, placeholder }) {
   );
 }
 
+// Conséquence de la prédiction sur le paiement (suspension temporaire) : fraude prédite =
+// paiement suspendu jusqu'à la décision de l'analyste ; non fraude = paiement accepté.
+// Une transaction non scorée (aucun modèle actif, scoring en échec) garde le message neutre.
+function PaymentNotice({ result, scoring }) {
+  // Identifiant et montant insécables : « TXN-20446205 » ne doit pas se couper sur son tiret.
+  const id = <span className="whitespace-nowrap">{result.transaction_id}</span>;
+  const transaction = (
+    <>
+      {id} <span className="whitespace-nowrap">({formatAmount(result.amount)})</span>
+    </>
+  );
+  if (scoring.isFraud === true) {
+    return (
+      <Notice tone="danger">
+        <strong className="font-semibold uppercase">Paiement suspendu</strong> — vérification en cours.{" "}
+        {scoring.alertId ? (
+          <>Alerte #{scoring.alertId} transmise aux analystes pour la transaction {transaction}.</>
+        ) : (
+          <>La transaction {transaction} attend la décision d'un analyste.</>
+        )}
+      </Notice>
+    );
+  }
+  if (scoring.isFraud === false) {
+    return (
+      <Notice tone="success">
+        <strong className="font-semibold">Paiement accepté.</strong> Transaction {transaction} enregistrée, aucune alerte.
+      </Notice>
+    );
+  }
+  return <Notice tone="info">Transaction {id} enregistrée, aucune alerte déclenchée.</Notice>;
+}
+
 export default function NewTransactionPage() {
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -254,11 +287,7 @@ export default function NewTransactionPage() {
           {result ? (
             <div className="space-y-3">
               <ScorePanel transaction={result} />
-              <Notice tone={scoring.alertId ? "danger" : "success"}>
-                {scoring.alertId
-                  ? `Alerte #${scoring.alertId} créée : la transaction ${result.transaction_id} (${formatAmount(result.amount)}) est transmise aux analystes.`
-                  : `Transaction ${result.transaction_id} enregistrée, aucune alerte déclenchée.`}
-              </Notice>
+              <PaymentNotice result={result} scoring={scoring} />
               <div className="flex flex-wrap gap-2">
                 {result.id && (
                   <Link to={`/transactions/${result.id}`} className={SECONDARY_BUTTON}>

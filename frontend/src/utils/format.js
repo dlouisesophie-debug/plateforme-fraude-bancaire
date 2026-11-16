@@ -43,6 +43,21 @@ export function formatDateTime(value) {
   return Number.isNaN(date.getTime()) ? String(value) : dateTimeFormatter.format(date);
 }
 
+// Durée entre deux instants -> "moins d'une minute", "12 min", "2 h 5 min", "3 j 4 h".
+// Un léger décalage d'horloge entre serveur et navigateur compte comme une durée nulle.
+export function formatDuration(from, to = Date.now()) {
+  if (isMissing(from) || isMissing(to)) return null;
+  const elapsed = new Date(to).getTime() - new Date(from).getTime();
+  if (Number.isNaN(elapsed)) return null;
+  const minutes = Math.floor(Math.max(0, elapsed) / 60000);
+  if (minutes < 1) return "moins d'une minute";
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return minutes % 60 ? `${hours} h ${minutes % 60} min` : `${hours} h`;
+  const days = Math.floor(hours / 24);
+  return hours % 24 ? `${days} j ${hours % 24} h` : `${days} j`;
+}
+
 // Valeur attendue par <input type="datetime-local"> (heure locale).
 export function toDateTimeLocal(value) {
   const date = value ? new Date(value) : new Date();
