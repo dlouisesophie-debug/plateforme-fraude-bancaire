@@ -13,9 +13,14 @@ Le chemin peut etre relatif a settings.ML_MODELS_DIR (recommande, c'est le
 dossier monte par docker-compose, volume ./ml/models:/app/ml_models) ou
 absolu.
 
-Un seul modele peut etre actif a la fois (contrainte single_active_model
-sur MLModel) : cette commande desactive automatiquement l'ancien modele
-actif avant d'activer le nouveau.
+Un seul modele peut etre actif par famille (contrainte
+single_active_model_per_family sur MLModel) : cette commande desactive
+automatiquement l'ancien modele actif de la MEME famille avant d'activer le
+nouveau. La famille (carte ou mobile_money) est lue dans le fichier (cle
+"famille", absente = carte), ou imposee avec --famille :
+
+    python manage.py activer_modele_ml fraudguard_mobile_money_pipeline.joblib \
+        --modele-version mm-v1 --famille mobile_money
 """
 
 import os
@@ -47,6 +52,20 @@ class Command(BaseCommand):
         parser.add_argument("--recall", type=float, default=None)
         parser.add_argument("--f1", type=float, default=None)
         parser.add_argument("--auc", type=float, default=None)
+        parser.add_argument(
+            "--famille", default=None, choices=MLModel.Famille.values,
+            help="Famille du modele. Par defaut : cle \"famille\" du fichier (absente = carte).",
+        )
+
+    @staticmethod
+    def _famille_du_fichier(chemin_absolu):
+        from predict import load_pipeline  # ml/src, ajoute au chemin par fraud_detection/apps.py
+
+        pipeline = load_pipeline(chemin_absolu)
+        famille = pipeline.get("famille", MLModel.Famille.CARTE) if isinstance(pipeline, dict) else MLModel.Famille.CARTE
+        if famille not in MLModel.Famille.values:
+            raise CommandError(f"Famille inconnue dans le fichier : {famille!r} (attendu : {MLModel.Famille.values}).")
+        return famille
 
     def handle(self, *args, **options):
         chemin_joblib = options["chemin_joblib"]
@@ -61,14 +80,16 @@ class Command(BaseCommand):
             raise CommandError(f"Fichier introuvable : {chemin_absolu}")
 
         version = options["modele_version"] or datetime.now(timezone.utc).strftime("v%Y%m%d-%H%M%S")
+        famille = options["famille"] or self._famille_du_fichier(chemin_absolu)
 
-        # Un seul modele actif a la fois (contrainte DB) : on desactive
-        # l'ancien avant de creer/activer le nouveau.
-        MLModel.objects.filter(is_active=True).update(is_active=False)
+        # Un seul modele actif par famille (contrainte DB) : on desactive
+        # l'ancien de la meme famille avant de creer/activer le nouveau.
+        MLModel.objects.filter(is_active=True, famille=famille).exclude(version=version).update(is_active=False)
 
         modele, cree = MLModel.objects.update_or_create(
             version=version,
             defaults={
+                "famille": famille,
                 "algorithm": options["algorithm"],
                 "precision_score": options["precision"],
                 "recall_score": options["recall"],
@@ -82,6 +103,6 @@ class Command(BaseCommand):
 
         action = "cree et active" if cree else "mis a jour et active"
         self.stdout.write(self.style.SUCCESS(
-            f"Modele ML {action} : {modele.algorithm} {modele.version} "
+            f"Modele ML {action} : {modele.algorithm} {modele.version}, famille {modele.famille} "
             f"(artifact_path={modele.artifact_path})"
         ))

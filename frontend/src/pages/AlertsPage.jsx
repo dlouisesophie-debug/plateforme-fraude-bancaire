@@ -8,7 +8,7 @@ import Pagination from "../components/Pagination";
 import Notice from "../components/Notice";
 import { ALERT_STATUS_CHOICES, CHANNEL_CHOICES, SEVERITY_CHOICES, labelFor } from "../constants/choices";
 import { INPUT_CLASS, SELECT_CLASS } from "../constants/ui";
-import { apiErrorMessage, formatAmount, formatDateTime, formatDuration } from "../utils/format";
+import { apiErrorMessage, formatDateTime, formatDuration, formatTransactionAmount } from "../utils/format";
 
 const PAGE_SIZE = 20;
 
@@ -93,7 +93,7 @@ function AlertItem({ alert, now, onUpdated, onError }) {
               <span className="font-medium text-ink-primary">{alert.transaction_id ?? "—"}</span>
             )}
             {" · "}
-            <span className="tabular-nums">{formatAmount(alert.amount)}</span>
+            <span className="tabular-nums">{formatTransactionAmount(alert)}</span>
             {" · "}
             {labelFor(CHANNEL_CHOICES, alert.channel) ?? "—"}
             {" · "}

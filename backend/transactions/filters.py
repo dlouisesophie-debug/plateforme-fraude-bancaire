@@ -24,4 +24,4 @@ class TransactionFilter(django_filters.FilterSet):
 
     class Meta:
         model = Transaction
-        fields = ["status", "channel", "date_after", "date_before", "min_amount", "max_amount"]
+        fields = ["status", "channel", "operation_type", "date_after", "date_before", "min_amount", "max_amount"]

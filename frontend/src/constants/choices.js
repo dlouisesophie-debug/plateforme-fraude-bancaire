@@ -12,6 +12,21 @@ export const CHANNEL_CHOICES = [
   { value: "online", label: "Paiement en ligne" },
 ];
 
+// Familles de modèles : un modèle actif par famille, chacun avec son seuil.
+export const MODEL_FAMILY_CHOICES = [
+  { value: "carte", label: "Carte (et autres canaux)" },
+  { value: "mobile_money", label: "Mobile Money" },
+];
+
+// Types d'opération mobile money : variable du modèle mobile money (données PaySim).
+export const OPERATION_TYPE_CHOICES = [
+  { value: "cash_in", label: "Dépôt" },
+  { value: "cash_out", label: "Retrait" },
+  { value: "transfer", label: "Transfert" },
+  { value: "payment", label: "Paiement" },
+  { value: "debit", label: "Débit vers un compte bancaire" },
+];
+
 export const ALERT_STATUS_CHOICES = [
   { value: "open", label: "Ouverte" },
   { value: "confirmed", label: "Fraude confirmée" },

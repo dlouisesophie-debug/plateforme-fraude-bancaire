@@ -8,7 +8,7 @@ directement dans Excel en français, accents compris.
 import csv
 
 EN_TETES = [
-    "ID transaction", "Date", "Montant (FCFA)", "Canal", "Commerçant",
+    "ID transaction", "Date", "Montant (FCFA)", "Canal", "Type d'opération", "Commerçant",
     "Catégorie", "Ville client", "Région client", "Statut",
     "Probabilité de fraude (%)", "Prédiction modèle", "Version modèle",
 ]
@@ -25,6 +25,7 @@ def lignes_transactions(queryset):
             t.timestamp.strftime("%Y-%m-%d %H:%M"),
             f"{t.amount:.2f}".replace(".", ","),
             t.get_channel_display(),
+            t.get_operation_type_display(),
             t.merchant,
             t.category,
             t.customer_city,
