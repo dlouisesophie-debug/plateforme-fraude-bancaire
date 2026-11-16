@@ -7,7 +7,7 @@ Tout ce qui est décrit ici a été exécuté et testé (voir « Tests automatiq
 
 Quand une transaction est créée via l'API (`POST /api/transactions/`), elle est scorée
 automatiquement par le modèle actif. Une `Prediction` est enregistrée ; si le score dépasse
-le seuil du modèle (0,1126), une `Alert` est créée et la transaction passe en `under_review`.
+le seuil du modèle (0,0652), une `Alert` est créée et la transaction passe en `under_review`.
 
 ## Fichiers modifiés ou ajoutés
 
@@ -42,6 +42,31 @@ le scoring, mais elle est ignorée et fausse le score** (un avertissement est é
   modèle donnent un meilleur score, les autres sont traitées comme « rares ».
 
 Tous ces champs sont optionnels en base (rien ne casse sans eux) mais le frontend doit les envoyer.
+
+## Deux modèles : carte et mobile money
+
+Chaque modèle répond fraude / non fraude avec son propre seuil, choisi sur la validation.
+`MLModel.famille` permet **un modèle actif par famille** (contrainte `single_active_model_per_family`).
+
+| Famille | Fichier | Utilisé pour | Variables | Seuil |
+|---|---|---|---|---|
+| `carte` | `fraudguard_pipeline.joblib` | carte, paiement en ligne, virement, et mobile money sans type d'opération | voir ci-dessus | 0,0652 |
+| `mobile_money` | `fraudguard_mobile_money_pipeline.joblib` | canal `mobile_money` **avec** un `operation_type` | type d'opération, montant, heure locale | 0,9307 |
+
+- `operation_type` : `cash_in` (Dépôt), `cash_out` (Retrait), `transfer` (Transfert), `payment`
+  (Paiement), `debit` (Débit vers un compte bancaire). Refusé par l'API pour un autre canal.
+- Le montant d'une transaction mobile money est dans **l'unité du simulateur PaySim**, pas en FCFA :
+  l'interface l'affiche ainsi partout.
+- Sans modèle mobile money actif, le mobile money est scoré par le modèle carte, comme avant.
+- `activer_modele_ml` lit la famille dans le fichier (clé `famille`, absente = carte) :
+
+```bash
+python manage.py activer_modele_ml fraudguard_mobile_money_pipeline.joblib --modele-version mm-v1 \
+    --algorithm xgboost --precision 0.1245 --recall 0.4711 --f1 0.1969 --auc 0.8822
+```
+
+Au démarrage du conteneur, `docker-entrypoint.sh` active les deux modèles (le mobile money
+seulement si son fichier est présent).
 
 ## Mise en route avec Docker
 
@@ -118,7 +143,7 @@ Une prédiction saisie à la main dans l'admin Django n'est **pas** scorée : el
 ## Points d'attention
 
 - Le pipeline est mis en cache en mémoire ; changer de modèle actif le recharge automatiquement.
-- Le seuil utilisé est `seuil_decision` du pipeline (≈ 0,1126, optimisé pour ~85 % de rappel),
+- Le seuil utilisé est `seuil_decision` du pipeline (≈ 0,0652, optimisé pour ~85 % de rappel),
   pas `FRAUD_ALERT_THRESHOLD`, qui ne sert que de valeur de secours.
 - La gravité de l'alerte (`low`, `medium`, `high`, `critical`) vient de `services._gravite()` ;
   à ajuster selon vos règles métier.

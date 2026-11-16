@@ -19,6 +19,14 @@ export function formatNumber(value) {
   return numberFormatter.format(Number(value));
 }
 
+// Montant d'une transaction (ou d'une alerte) : en FCFA, sauf en mobile money avec un
+// type d'opération, saisi dans l'unité du simulateur PaySim du modèle mobile money.
+export function formatTransactionAmount(item) {
+  if (!item?.operation_type) return formatAmount(item?.amount);
+  if (isMissing(item.amount) || Number.isNaN(Number(item.amount))) return "—";
+  return `${integerFormatter.format(Number(item.amount))} (unité simulateur)`;
+}
+
 // Probabilité 0..1 -> "87,3 %"
 export function formatProbability(value) {
   if (isMissing(value)) return "—";
@@ -92,8 +100,8 @@ export function apiErrorMessage(err, fallback) {
   return fallback ?? `Erreur serveur (${err.response.status})`;
 }
 
-// "1.0.0" -> "v1.0.0" ; "v1" reste "v1" (le backend peut déjà inclure le préfixe).
+// "1.0.0" -> "v1.0.0" ; "v1" et "mm-v1" restent tels quels (préfixe seulement devant un chiffre).
 export function formatVersion(version) {
   if (version === null || version === undefined || version === "") return "—";
-  return /^v/i.test(String(version)) ? String(version) : `v${version}`;
+  return /^\d/.test(String(version)) ? `v${version}` : String(version);
 }

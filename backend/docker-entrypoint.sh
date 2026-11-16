@@ -12,6 +12,8 @@
 # Variables optionnelles :
 #   ML_MODEL_FILE    (défaut fraudguard_pipeline.joblib)
 #   ML_MODEL_VERSION (défaut v1)
+#   ML_MM_MODEL_FILE    (défaut fraudguard_mobile_money_pipeline.joblib, activé s'il existe)
+#   ML_MM_MODEL_VERSION (défaut mm-v1)
 #   SEED_DEMO        (défaut true ; false pour ne pas créer de données de démo)
 #   DEMO_PASSWORD    (mot de passe des comptes démo ; défaut celui de seed_demo)
 set -e
@@ -19,6 +21,8 @@ set -e
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-fraudguard.settings}"
 ML_MODEL_FILE="${ML_MODEL_FILE:-fraudguard_pipeline.joblib}"
 ML_MODEL_VERSION="${ML_MODEL_VERSION:-v1}"
+ML_MM_MODEL_FILE="${ML_MM_MODEL_FILE:-fraudguard_mobile_money_pipeline.joblib}"
+ML_MM_MODEL_VERSION="${ML_MM_MODEL_VERSION:-mm-v1}"
 
 echo "[entrypoint] Attente de la base de données..."
 python - <<'EOF'
@@ -44,6 +48,19 @@ echo "[entrypoint] Activation du modèle ML ($ML_MODEL_FILE, $ML_MODEL_VERSION).
 python manage.py activer_modele_ml "$ML_MODEL_FILE" \
     --modele-version "$ML_MODEL_VERSION" --algorithm xgboost \
     --precision 0.6075 --recall 0.8695 --f1 0.7152 --auc 0.9945
+
+# Modèle mobile money (famille lue dans le fichier) : activé seulement s'il est
+# livré dans ml/models. Sans lui, le mobile money reste scoré par le modèle carte.
+if python manage.py shell -c "import os, sys; from django.conf import settings; sys.exit(0 if os.path.isfile(os.path.join(settings.ML_MODELS_DIR, '$ML_MM_MODEL_FILE')) else 1)"; then
+    echo "[entrypoint] Activation du modèle mobile money ($ML_MM_MODEL_FILE, $ML_MM_MODEL_VERSION)..."
+    # Métriques du TEST au seuil retenu (ml/reports/mobile_money/metriques.json),
+    # AUC mesurée sur les transferts et retraits.
+    python manage.py activer_modele_ml "$ML_MM_MODEL_FILE" \
+        --modele-version "$ML_MM_MODEL_VERSION" --algorithm xgboost \
+        --precision 0.1245 --recall 0.4711 --f1 0.1969 --auc 0.8822
+else
+    echo "[entrypoint] Pas de modèle mobile money ($ML_MM_MODEL_FILE) : scoring par le modèle carte."
+fi
 
 if [ "${SEED_DEMO:-true}" = "true" ]; then
     if python manage.py shell -c "from transactions.models import Transaction; import sys; sys.exit(0 if Transaction.objects.filter(transaction_id__startswith='DEMO-').exists() else 1)"; then
