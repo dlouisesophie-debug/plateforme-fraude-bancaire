@@ -1,0 +1,259 @@
+{
+  "famille": "mobile_money",
+  "precision_score": 0.1244773238983596,
+  "recall_score": 0.4710894704808278,
+  "f1_score": 0.19692151125810967,
+  "auc_roc": 0.8822370986512968,
+  "pr_auc": 0.32263743815686924,
+  "matrice_confusion": [
+    [
+      1265437,
+      5444
+    ],
+    [
+      869,
+      774
+    ]
+  ],
+  "seuil_decision": 0.9306862354278564,
+  "date_entrainement": "2026-11-16T01:43:55+00:00",
+  "jeu_evaluation": "test",
+  "seuil_choisi_sur": "validation",
+  "recall_cible_validation": 0.5,
+  "intervalle_confiance_95": {
+    "recall_ic95": [
+      0.4473520249221184,
+      0.4961202077581961
+    ],
+    "precision_ic95": [
+      0.11659107339996287,
+      0.13276221772382682
+    ]
+  },
+  "validation": {
+    "seuil": 0.9306862354278564,
+    "precision": 0.12810110781713216,
+    "recall": 0.5,
+    "f1_score": 0.2039498198981493,
+    "auc_roc": 0.950398695795988,
+    "pr_auc": 0.3408587029320117,
+    "matrice_confusion": [
+      [
+        1265294,
+        5588
+      ],
+      [
+        821,
+        821
+      ]
+    ],
+    "n_echantillons": 1272524,
+    "n_fraudes": 1642
+  },
+  "algorithme": "XGBoost",
+  "hyperparametres": {
+    "subsample": 0.8,
+    "n_estimators": 300,
+    "max_depth": 6,
+    "learning_rate": 0.05,
+    "colsample_bytree": 0.8
+  },
+  "pr_auc_validation_croisee": 0.5326598586367571,
+  "variables": [
+    "montant",
+    "heure_transaction",
+    "type_depot",
+    "type_retrait",
+    "type_transfert",
+    "type_paiement",
+    "type_debit"
+  ],
+  "colonnes_non_lues": [
+    "nameOrig",
+    "nameDest",
+    "oldbalanceOrg",
+    "newbalanceOrig",
+    "oldbalanceDest",
+    "newbalanceDest",
+    "isFlaggedFraud"
+  ],
+  "fraudes_par_type_train": {
+    "Débit": 0,
+    "Dépôt": 0,
+    "Paiement": 0,
+    "Retrait": 2477,
+    "Transfert": 2451
+  },
+  "regle_simple": {
+    "description": "type dans ['Retrait', 'Transfert'] et montant >= 462452.87 (unites du simulateur)",
+    "types_a_risque": [
+      "Retrait",
+      "Transfert"
+    ],
+    "seuil_montant": 462452.87,
+    "test": {
+      "seuil": 462452.87,
+      "precision": 0.01095219325412467,
+      "recall": 0.47352404138770543,
+      "f1_score": 0.021409210363378693,
+      "auc_roc": 0.8595536117240121,
+      "pr_auc": 0.019122237451972345,
+      "matrice_confusion": [
+        [
+          1200623,
+          70258
+        ],
+        [
+          865,
+          778
+        ]
+      ],
+      "n_echantillons": 1272524,
+      "n_fraudes": 1643
+    }
+  },
+  "sensibilite_precision_au_taux_de_fraude": {
+    "taux_fraude_observe": 0.0012911347840983745,
+    "taux_faux_positifs": 0.004283642606978938,
+    "recall": 0.4710894704808278,
+    "precision_selon_taux": {
+      "0.00129": 0.1244773238983596,
+      "0.00050": 0.05214575194111738,
+      "0.00100": 0.09916736850032275,
+      "0.00500": 0.35593293875658627,
+      "0.01000": 0.5262569387594911
+    }
+  },
+  "reduction_train": {
+    "applique": true,
+    "lignes_train_avant": 3817572,
+    "lignes_train_apres": 500000,
+    "fraudes_conservees": 4928,
+    "legitimes_conservees": 495072,
+    "validation_et_test_reduits": false
+  },
+  "source_donnees": "PaySim (Lopez-Rojas, Elmir, Axelsson, EMSS 2016) - Kaggle ealaxi/paysim1",
+  "montants_en_unite_simulateur": true,
+  "effectifs": {
+    "train_complet": 3817572,
+    "train_utilise": 500000,
+    "validation": 1272524,
+    "test": 1272524
+  },
+  "versions": {
+    "python": "3.12.3",
+    "scikit-learn": "1.4.2",
+    "xgboost": "2.0.3",
+    "imbalanced-learn": "0.12.2",
+    "pandas": "2.2.2",
+    "numpy": "1.26.4"
+  },
+  "evaluation_transfert_retrait": {
+    "seuil": 0.9306862354278564,
+    "precision": 0.1244773238983596,
+    "recall": 0.4710894704808278,
+    "f1_score": 0.19692151125810967,
+    "auc_roc": 0.8822370986512968,
+    "pr_auc": 0.32263743815686924,
+    "matrice_confusion": [
+      [
+        546633,
+        5444
+      ],
+      [
+        869,
+        774
+      ]
+    ],
+    "n_echantillons": 553720,
+    "n_fraudes": 1643,
+    "types": [
+      "Retrait",
+      "Transfert"
+    ],
+    "fraudes_hors_types": 0
+  },
+  "colonne_lue_non_utilisee_comme_variable": {
+    "step": "indice de temps brut ; sert uniquement a calculer l'heure (step modulo 24)"
+  },
+  "point_initial": {
+    "recall_cible_validation": 0.85,
+    "seuil_decision": 0.513332724571228,
+    "test": {
+      "precision": 0.009829619921363041,
+      "recall": 0.8490566037735849,
+      "f1_score": 0.019434247462751027,
+      "auc_roc_toutes_operations": 0.9488432124739546,
+      "matrice_confusion": [
+        [
+          1130358,
+          140523
+        ],
+        [
+          248,
+          1395
+        ]
+      ]
+    }
+  },
+  "auc_roc_perimetre": "Transfert + Retrait",
+  "auc_roc_toutes_operations": 0.9488432124739546,
+  "tableau_compromis_validation": [
+    {
+      "rappel_vise": 0.3,
+      "seuil": 0.9949795603752136,
+      "rappel": 0.30085261875761266,
+      "precision": 0.59375,
+      "fraudes_trouvees": 494,
+      "fausses_alertes": 338,
+      "fraudes_manquees": 1148,
+      "part_operations_alertees": 0.0006538187099025245,
+      "part_transferts_retraits_alertes": 0.0014990666868464105
+    },
+    {
+      "rappel_vise": 0.5,
+      "seuil": 0.9306862354278564,
+      "rappel": 0.5,
+      "precision": 0.12810110781713216,
+      "fraudes_trouvees": 821,
+      "fausses_alertes": 5588,
+      "fraudes_manquees": 821,
+      "part_operations_alertees": 0.005036447249717884,
+      "part_transferts_retraits_alertes": 0.011547498072113756
+    },
+    {
+      "rappel_vise": 0.6,
+      "seuil": 0.8558688163757324,
+      "rappel": 0.6010962241169305,
+      "precision": 0.04657417893544734,
+      "fraudes_trouvees": 987,
+      "fausses_alertes": 20205,
+      "fraudes_manquees": 655,
+      "part_operations_alertees": 0.01665351694742103,
+      "part_transferts_retraits_alertes": 0.038182958206309056
+    },
+    {
+      "rappel_vise": 0.7,
+      "seuil": 0.7471814751625061,
+      "rappel": 0.7003654080389768,
+      "precision": 0.022824706255954272,
+      "fraudes_trouvees": 1150,
+      "fausses_alertes": 49234,
+      "fraudes_manquees": 492,
+      "part_operations_alertees": 0.03959375225928941,
+      "part_transferts_retraits_alertes": 0.09078001917075666
+    },
+    {
+      "rappel_vise": 0.85,
+      "seuil": 0.513332724571228,
+      "rappel": 0.8501827040194885,
+      "precision": 0.009840341169421634,
+      "fraudes_trouvees": 1396,
+      "fausses_alertes": 140469,
+      "fraudes_manquees": 246,
+      "part_operations_alertees": 0.11148316259654042,
+      "part_transferts_retraits_alertes": 0.2556070859729159
+    }
+  ],
+  "date_choix_du_seuil": "2026-11-16T12:16:47+00:00"
+}
