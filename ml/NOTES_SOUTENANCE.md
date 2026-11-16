@@ -56,9 +56,8 @@ avant de l'écrire dans le mémoire**. Conséquences à assumer :
 
 - les métriques ne prouvent pas la performance sur de vraies transactions sénégalaises ;
 - les motifs de fraude sont ceux du simulateur, pas ceux d'un fraudeur réel ;
-- les signaux les plus utilisés par le modèle (montant élevé, transaction de nuit, catégorie du
-  commerçant) sont ceux du simulateur ; la distance client-commerçant, elle, ne distingue pas les
-  fraudes des transactions légitimes (distance médiane d'environ 78 km dans les deux cas).
+- la distance client-commerçant, très discriminante ici, dépend de la façon dont le simulateur
+  génère les coordonnées.
 
 Ce que le projet démontre : une **chaîne complète et méthodologiquement propre** (découpage,
 absence de fuite, seuil sur validation, évaluation honnête, intégration API, alertes), prête à
@@ -76,101 +75,8 @@ dès qu'on dispose de telles données, il suffit de l'ajouter dans `preprocessin
 réentraîner avec `training.py` et de réactiver le modèle. »*
 Ne pas prétendre que le modèle « tient compte du canal » : ce serait faux.
 
-**Mise à jour (deux modèles).** Le canal n'est toujours pas une variable *d'un* modèle, mais il peut
-servir à **choisir le modèle** : une transaction carte est scorée par le modèle carte, une
-transaction Mobile Money par le modèle Mobile Money (`predict.py` sait préparer les deux familles).
-Ce choix se fait côté backend ; tant qu'il n'est pas branché, le backend n'appelle que le modèle
-actif. Ne dire que ce qui est réellement en place le jour de la soutenance.
-
 ## 6. « Pourquoi XGBoost ? »
 
 Trois modèles ont été comparés (régression logistique, Random Forest, XGBoost), tous avec SMOTE
 dans le pipeline, **sur le jeu de validation** ; le choix se fait sur la PR-AUC en validation.
 Le tableau est dans `ml/reports/comparaison_modeles.csv`.
-
-## 7. Modèle Mobile Money (PaySim) — réponses préparées
-
-Il y a **deux modèles séparés**, chacun avec son propre seuil de décision : le modèle carte
-(`fraudguard_pipeline.joblib`) et le modèle Mobile Money (`fraudguard_mobile_money_pipeline.joblib`).
-Ils ne partagent ni variables ni préprocesseur ; le backend choisit le fichier selon le canal, et
-`predict.py` choisit la bonne préparation d'après la clé `famille` du fichier.
-
-**« D'où viennent les données ? »** PaySim, un simulateur de transactions Mobile Money :
-E. A. Lopez-Rojas, A. Elmir, S. Axelsson, « PaySim: a financial mobile money simulator for fraud
-detection », Proceedings of EMSS 2016, p. 249-255 ; jeu publié sur Kaggle (`ealaxi/paysim1`).
-Ce sont des données **simulées**, comme pour le modèle carte. **Licence : CC BY-SA 4.0** (page Kaggle du
-jeu, consultée le 16/11/2026). BY : il faut citer l'auteur (Edgar Lopez-Rojas, article EMSS 2016 ci-dessus).
-SA (partage dans les mêmes conditions) : si l'on redistribue le jeu ou une version adaptée, c'est sous la même
-licence. Nous ne redistribuons pas les données (dossier `ml/data/raw/` non versionné) ; le dépôt ne contient
-que le code, le modèle entraîné et les rapports. *Pas un avis juridique : en cas de doute sur le statut du
-modèle entraîné, le dire au jury plutôt que l'affirmer.*
-
-**« Pourquoi seulement trois variables ? »** Le contrat de données est : type d'opération, montant,
-heure. Les colonnes écartées, et pourquoi :
-- les **4 colonnes de soldes** (avant/après, expéditeur et destinataire) : la description du jeu
-  indique qu'elles trahissent la fraude. Les utiliser donnerait un faux score proche de 99 % ;
-- les **identifiants de compte** (`nameOrig`, `nameDest`) : aucune information généralisable ;
-- **`isFlaggedFraud`** : sortie d'une règle du simulateur, pas une information connue avant la décision.
-Ces colonnes ne sont même pas lues dans le CSV (`charger_paysim` ne demande que 4 colonnes) et un test
-échoue si l'une d'elles entre dans le modèle.
-
-**« Les montants sont-ils en FCFA ? »** Non : unité du simulateur, aucune conversion en FCFA n'est
-faite (un taux de change inventé n'aurait aucune source).
-
-**« L'heure vient d'où ? »** De `step` (1 pas = 1 heure de simulation) : heure = step modulo 24. Le
-point d'origine du simulateur n'est pas documenté ; seul compte le fait que l'entraînement et l'API
-appliquent la même règle.
-
-**« Comment est choisi le seuil ? »** Un seul seuil, choisi sur la validation, jamais sur le test. Le point
-retenu par l'équipe est celui à **50 % de rappel : 0,9307** (point initial à 85 % : 0,5133, conservé en
-comparaison). Le test est utilisé une seule fois, avec des intervalles de confiance à 95 %.
-
-**« Quels sont les résultats ? »** Sur le test (1 272 524 transactions dont 1 643 fraudes), seuil 0,9307 :
-rappel **47,1 %** (IC 95 % : 44,7 – 49,6 %), précision **12,5 %**, F1 0,197, AUC-ROC 0,882 sur Transfert +
-Retrait (0,949 sur toutes opérations). Soit 774 fraudes trouvées sur 1 643, 5 444 fausses alertes : environ
-7 alertes pour une vraie fraude. À dire clairement : on rate plus d'une fraude sur deux. Cause : seulement
-trois variables, les soldes étant exclus.
-
-**« Pourquoi un rappel de 50 % ? »** C'est un compromis choisi sur la validation (tableau du README) : à 85 %
-de rappel on aurait 100 alertes pour une fraude (précision 0,98 %), à 30 % la précision monte à 59 %. Le bon
-point dépend du coût d'une fraude manquée et du coût d'une alerte traitée : décision métier.
-
-**« Votre modèle fait-il mieux qu'une règle simple ? »** Oui. Règle : *Transfert ou Retrait et montant ≥
-59 628* (types et seuil fixés sans le test). Au même rappel (47 %), précision 1,1 % pour la règle contre
-12,5 % pour le modèle, PR-AUC 0,021 contre 0,341 en validation. Détail :
-`ml/reports/mobile_money/comparaison_modeles_point_initial_85.csv`.
-
-**« Le modèle ne signale jamais un dépôt, un paiement ou un débit : n'est-ce pas un biais ? »** C'est
-une conséquence directe des données : dans PaySim, la fraude n'apparaît que dans les Transferts et les
-Retraits (aucune fraude dans 718 804 opérations des trois autres types du jeu de test). Le modèle a
-appris cette règle et ne lève aucune alerte sur ces types ; c'est correct *pour ces données*, mais cela
-ne dit rien sur de vraies transactions. Pour ne pas gonfler les résultats, nous donnons aussi les
-métriques sur Transfert + Retrait seuls : même rappel (47,1 %) et même précision (12,5 %), mais **0,99 %
-des opérations légitimes de ces deux types sont signalées**, et l'AUC-ROC est de 0,882 (contre 0,949 sur
-toutes les opérations).
-
-**« À quoi sert le champ `step` ? »** Il n'est pas une variable du modèle : il est lu uniquement pour
-calculer l'heure du jour (heure = step modulo 24) ; le step brut est exclu comme les soldes et les
-identifiants. Dakar étant en UTC+0, l'heure saisie dans l'application correspond directement.
-
-**« Qu'est-ce qui distingue une fraude, dans ces données ? »** Les fraudes n'existent que dans les
-Transferts (0,77 %) et les Retraits (0,18 %) ; aucun Dépôt, Paiement ni Débit n'est frauduleux. Les montants
-sont plus élevés (médiane 441 423 contre 74 685). Les fraudes sont réparties **uniformément sur 24 h**,
-alors que l'activité légitime se concentre entre 9 h et 21 h : l'heure est un signal parce que le
-simulateur l'a construit ainsi, pas parce que les vrais fraudeurs agissent la nuit.
-
-**« Pourquoi la précision serait-elle plus faible dans la réalité ? »** Le rappel et le taux de faux
-positifs ne dépendent pas de la fréquence de la fraude, mais la précision, si : précision =
-TP / (TP + FP), avec TP = rappel × π et FP = taux de faux positifs × (1 − π), π étant la part de
-fraudes. Si la vraie fraude est plus rare que dans PaySim, la précision baisse. Le tableau
-`sensibilite_precision_au_taux_de_fraude` de `metriques.json` donne la précision pour plusieurs
-valeurs de π.
-
-**« Le jeu est énorme, comment l'avez-vous entraîné sur 8 Go de RAM ? »** Le jeu d'entraînement a été
-réduit (toutes les fraudes conservées, échantillon aléatoire des transactions légitimes). La
-validation et le test n'ont **jamais** été réduits. La réduction exacte est écrite dans
-`metriques.json` (`reduction_train`).
-
-**Limites à assumer :** données simulées ; trois variables seulement ; le comportement d'un vrai
-fraudeur Mobile Money (ou d'un client réel d'un opérateur sénégalais) peut être très différent ;
-les résultats montrent que la chaîne fonctionne, pas la performance en production.

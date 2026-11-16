@@ -7,7 +7,7 @@ Tout ce qui est décrit ici a été exécuté et testé (voir « Tests automatiq
 
 Quand une transaction est créée via l'API (`POST /api/transactions/`), elle est scorée
 automatiquement par le modèle actif. Une `Prediction` est enregistrée ; si le score dépasse
-le seuil du modèle (0,0652), une `Alert` est créée et la transaction passe en `under_review`.
+le seuil du modèle (0,1126), une `Alert` est créée et la transaction passe en `under_review`.
 
 ## Fichiers modifiés ou ajoutés
 
@@ -118,7 +118,7 @@ Une prédiction saisie à la main dans l'admin Django n'est **pas** scorée : el
 ## Points d'attention
 
 - Le pipeline est mis en cache en mémoire ; changer de modèle actif le recharge automatiquement.
-- Le seuil utilisé est `seuil_decision` du pipeline (≈ 0,0652, optimisé pour ~85 % de rappel),
+- Le seuil utilisé est `seuil_decision` du pipeline (≈ 0,1126, optimisé pour ~85 % de rappel),
   pas `FRAUD_ALERT_THRESHOLD`, qui ne sert que de valeur de secours.
 - La gravité de l'alerte (`low`, `medium`, `high`, `critical`) vient de `services._gravite()` ;
   à ajuster selon vos règles métier.
