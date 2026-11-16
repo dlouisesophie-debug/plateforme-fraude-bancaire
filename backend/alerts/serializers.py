@@ -17,6 +17,8 @@ class AlertSerializer(serializers.ModelSerializer):
         source="prediction.transaction.amount", max_digits=12, decimal_places=2, read_only=True,
     )
     channel = serializers.CharField(source="prediction.transaction.channel", read_only=True)
+    # Mobile money : le montant est dans l'unité du simulateur si un type d'opération est renseigné.
+    operation_type = serializers.CharField(source="prediction.transaction.operation_type", read_only=True)
     channel_label = serializers.CharField(
         source="prediction.transaction.get_channel_display", read_only=True,
     )

@@ -67,7 +67,9 @@ def matrice_de_confusion(qs):
 
 
 def modele_actif():
-    modele = MLModel.objects.filter(is_active=True).first()
+    # Modèle de référence du tableau de bord : le modèle carte (le modèle mobile
+    # money, s'il est actif, apparaît sur la page Modèle IA).
+    modele = MLModel.objects.filter(is_active=True, famille=MLModel.Famille.CARTE).first()
     if modele is None:
         return None
     return {

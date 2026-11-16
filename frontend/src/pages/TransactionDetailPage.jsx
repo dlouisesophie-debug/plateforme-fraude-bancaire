@@ -6,9 +6,15 @@ import ScorePanel from "../components/ScorePanel";
 import Notice from "../components/Notice";
 import { useAuth } from "../hooks/useAuth";
 import { canAccess } from "../constants/roles";
-import { CATEGORY_CHOICES, CHANNEL_CHOICES, TRANSACTION_STATUS_CHOICES, labelFor } from "../constants/choices";
+import {
+  CATEGORY_CHOICES,
+  CHANNEL_CHOICES,
+  OPERATION_TYPE_CHOICES,
+  TRANSACTION_STATUS_CHOICES,
+  labelFor,
+} from "../constants/choices";
 import { CARD_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, SELECT_CLASS } from "../constants/ui";
-import { apiErrorMessage, formatAmount, formatDate, formatDateTime, formatNumber } from "../utils/format";
+import { apiErrorMessage, formatDate, formatDateTime, formatNumber, formatTransactionAmount } from "../utils/format";
 import { TRANSACTION_FIELD_GROUPS } from "../utils/transaction";
 
 const REQUALIFY_ROLES = ["admin", "analyst"];
@@ -80,9 +86,11 @@ function formatField(key, value, transaction) {
   if (value === null || value === undefined || value === "") return "—";
   switch (key) {
     case "amount":
-      return formatAmount(value);
+      return formatTransactionAmount(transaction);
     case "channel":
       return labelFor(CHANNEL_CHOICES, value);
+    case "operation_type":
+      return labelFor(OPERATION_TYPE_CHOICES, value);
     case "category":
       return labelFor(CATEGORY_CHOICES, value);
     case "timestamp":
@@ -142,7 +150,7 @@ export default function TransactionDetailPage() {
             Transaction {transaction.transaction_id}
           </h1>
           <p className="mt-1 text-sm text-ink-secondary">
-            {formatAmount(transaction.amount)} · {labelFor(CHANNEL_CHOICES, transaction.channel)} ·{" "}
+            {formatTransactionAmount(transaction)} · {labelFor(CHANNEL_CHOICES, transaction.channel)} ·{" "}
             {formatDateTime(transaction.timestamp)}
           </p>
 

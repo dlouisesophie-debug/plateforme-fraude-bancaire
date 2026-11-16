@@ -49,3 +49,24 @@ TRANSACTION_FRAUDE = {
     "merchant_latitude": 14.898403094975828,
     "merchant_longitude": -14.017604647296018,
 }
+
+# Mobile money (modele PaySim, seuil 0.9307 ; montants en unite du simulateur,
+# pas des FCFA). Trouves en interrogeant le vrai pipeline
+# ml/models/fraudguard_mobile_money_pipeline.joblib, sans forcer le score :
+# - retrait de 50 000 a 14 h  -> score ~ 0.37 : non fraude ;
+# - transfert de 1 000 000 a 3 h -> score ~ 0.998 : fraude.
+TRANSACTION_MM_NORMALE = {
+    "transaction_id": "T-MM-NORMALE-001",
+    "amount": "50000",
+    "channel": "mobile_money",
+    "operation_type": "cash_out",
+    "timestamp": "2026-10-11T14:00:00Z",
+}
+
+TRANSACTION_MM_FRAUDE = {
+    "transaction_id": "T-MM-FRAUDE-001",
+    "amount": "1000000",
+    "channel": "mobile_money",
+    "operation_type": "transfer",
+    "timestamp": "2026-10-11T03:00:00Z",
+}

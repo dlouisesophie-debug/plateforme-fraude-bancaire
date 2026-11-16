@@ -26,10 +26,14 @@ from transactions.models import Transaction
 
 from . import services
 from .models import MLModel, Prediction
-from .sample_transactions import TRANSACTION_FRAUDE, TRANSACTION_NORMALE
+from .sample_transactions import (
+    TRANSACTION_FRAUDE, TRANSACTION_MM_FRAUDE, TRANSACTION_MM_NORMALE, TRANSACTION_NORMALE,
+)
 
 PIPELINE_FILE = "fraudguard_pipeline.joblib"
 PIPELINE_PRESENT = os.path.isfile(os.path.join(settings.ML_MODELS_DIR, PIPELINE_FILE))
+PIPELINE_MM_FILE = "fraudguard_mobile_money_pipeline.joblib"
+PIPELINE_MM_PRESENT = os.path.isfile(os.path.join(settings.ML_MODELS_DIR, PIPELINE_MM_FILE))
 
 
 def creer_transaction(donnees):
@@ -205,3 +209,135 @@ class SeedDemoTests(TestCase):
             call_command("seed_demo", "--nombre", "5", stdout=StringIO())
             call_command("seed_demo", "--nombre", "5", "--reset", stdout=StringIO())
         self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 5)
+
+
+class ModeleParFamilleTests(TestCase):
+    """Mobile money : un modèle actif par famille, et choix du modèle selon le canal."""
+
+    def setUp(self):
+        from .testing import activer_faux_modele
+        self.carte = activer_faux_modele("carte-1")
+        self.mm = MLModel.objects.create(
+            version="mm-1", famille=MLModel.Famille.MOBILE_MONEY, algorithm="xgboost",
+            trained_at=datetime.now(timezone.utc), is_active=True, artifact_path="faux-mm.joblib",
+        )
+
+    def mobile_money(self, operation_type="transfer"):
+        return creer_transaction(dict(
+            TRANSACTION_NORMALE, transaction_id="MM-1", channel="mobile_money",
+            operation_type=operation_type, amount=250000, timestamp="2026-10-11T23:30:00Z",
+        ))
+
+    def scorer(self, transaction, probabilite=0.97):
+        """Score avec le faux modèle et renvoie (prédiction, variables reçues par le modèle)."""
+        from .testing import faux_modele
+        recues = []
+        with faux_modele(lambda d: recues.append(d) or probabilite):
+            prediction = services.score_transaction(transaction)
+        return prediction, recues
+
+    def test_un_modele_actif_par_famille(self):
+        self.assertEqual(MLModel.objects.filter(is_active=True).count(), 2)
+        with self.assertRaises(IntegrityError), db_transaction.atomic():
+            MLModel.objects.create(
+                version="mm-2", famille=MLModel.Famille.MOBILE_MONEY, algorithm="xgboost",
+                trained_at=datetime.now(timezone.utc), is_active=True, artifact_path="autre.joblib",
+            )
+
+    def test_mobile_money_avec_type_utilise_le_modele_mobile_money(self):
+        prediction, recues = self.scorer(self.mobile_money())
+        self.assertEqual(prediction.ml_model, self.mm)
+        # Contrat de données : type PaySim, montant tel que saisi, heure locale (Dakar = UTC+0).
+        self.assertEqual(recues, [{"type": "TRANSFER", "montant": 250000.0, "heure": 23}])
+        self.assertTrue(prediction.prediction)
+        self.assertTrue(Alert.objects.filter(prediction=prediction).exists())
+
+    def test_mobile_money_sans_type_reste_sur_le_modele_carte(self):
+        prediction, recues = self.scorer(self.mobile_money(operation_type=""))
+        self.assertEqual(prediction.ml_model, self.carte)
+        self.assertIn("categorie", recues[0])
+
+    def test_sans_modele_mobile_money_actif_retour_au_modele_carte(self):
+        self.mm.is_active = False
+        self.mm.save()
+        prediction, _ = self.scorer(self.mobile_money())
+        self.assertEqual(prediction.ml_model, self.carte)
+
+    def test_carte_utilise_le_modele_carte(self):
+        prediction, _ = self.scorer(creer_transaction(TRANSACTION_NORMALE), probabilite=0.01)
+        self.assertEqual(prediction.ml_model, self.carte)
+        self.assertFalse(prediction.prediction)
+
+    def test_saisie_api_du_type_doperation(self):
+        from rest_framework.test import APIClient
+        from .testing import faux_modele
+        client = APIClient()
+        client.force_authenticate(User.objects.create_user(username="ag", password="x", role="agent"))
+        donnees = dict(TRANSACTION_NORMALE, transaction_id="MM-API", channel="mobile_money", operation_type="cash_out")
+        with faux_modele(0.01):
+            reponse = client.post("/api/transactions/", donnees, format="json")
+        self.assertEqual(reponse.status_code, 201, reponse.content)
+        self.assertEqual(reponse.json()["operation_type"], "cash_out")
+        self.assertEqual(reponse.json()["operation_type_label"], "Retrait")
+        self.assertEqual(reponse.json()["model_version"], "mm-1")
+
+        # Le type d'opération n'a pas de sens pour un autre canal.
+        refus = client.post("/api/transactions/", dict(donnees, transaction_id="CARTE-API", channel="card"),
+                            format="json")
+        self.assertEqual(refus.status_code, 400)
+        self.assertIn("operation_type", refus.json())
+
+
+@skipUnless(PIPELINE_PRESENT, "fraudguard_pipeline.joblib introuvable dans ml/models")
+class CommandeActiverParFamilleTests(TestCase):
+    def lancer(self, *args):
+        call_command("activer_modele_ml", PIPELINE_FILE, *args, stdout=StringIO())
+
+    def test_famille_lue_dans_le_fichier_carte(self):
+        self.lancer("--modele-version", "1")  # fichier carte : pas de clé « famille »
+        self.assertEqual(MLModel.objects.get(version="1").famille, MLModel.Famille.CARTE)
+
+    def test_activer_un_modele_mobile_money_garde_le_modele_carte(self):
+        self.lancer("--modele-version", "1")
+        self.lancer("--modele-version", "mm-1", "--famille", "mobile_money")
+        actifs = dict(MLModel.objects.filter(is_active=True).values_list("famille", "version"))
+        self.assertEqual(actifs, {"carte": "1", "mobile_money": "mm-1"})
+
+
+@skipUnless(PIPELINE_PRESENT and PIPELINE_MM_PRESENT, "pipelines carte et mobile money requis dans ml/models")
+class ScoringMobileMoneyReelTests(TestCase):
+    """Scoring avec le VRAI modèle mobile money (PaySim), à côté du vrai modèle carte."""
+
+    def setUp(self):
+        call_command("activer_modele_ml", PIPELINE_FILE, "--modele-version", "carte-1", stdout=StringIO())
+        # Famille lue dans le fichier (clé « famille » = mobile_money), sans --famille.
+        call_command("activer_modele_ml", PIPELINE_MM_FILE, "--modele-version", "mm-1", stdout=StringIO())
+
+    def scorer(self, donnees):
+        t = Transaction.objects.create(**dict(donnees, timestamp=parse_datetime(donnees["timestamp"])))
+        return t, services.score_transaction(t)
+
+    def test_la_famille_est_lue_dans_le_fichier(self):
+        self.assertEqual(MLModel.objects.get(version="mm-1").famille, MLModel.Famille.MOBILE_MONEY)
+        self.assertEqual(MLModel.objects.filter(is_active=True).count(), 2)
+
+    def test_retrait_en_journee_non_fraude(self):
+        t, prediction = self.scorer(TRANSACTION_MM_NORMALE)
+        t.refresh_from_db()
+        self.assertEqual(prediction.ml_model.version, "mm-1")
+        self.assertFalse(prediction.prediction)
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
+
+    def test_gros_transfert_de_nuit_fraude_et_suspendu(self):
+        t, prediction = self.scorer(TRANSACTION_MM_FRAUDE)
+        t.refresh_from_db()
+        self.assertEqual(prediction.ml_model.version, "mm-1")
+        self.assertTrue(prediction.prediction)
+        self.assertGreaterEqual(prediction.fraud_probability, 0.9307)
+        self.assertEqual(t.status, Transaction.Status.UNDER_REVIEW)
+        self.assertTrue(Alert.objects.filter(prediction=prediction).exists())
+
+    def test_le_modele_carte_reste_utilise_pour_la_carte(self):
+        _, prediction = self.scorer(dict(TRANSACTION_FRAUDE, customer_birth_date=parse_date("1963-05-02")))
+        self.assertEqual(prediction.ml_model.version, "carte-1")
+        self.assertTrue(prediction.prediction)

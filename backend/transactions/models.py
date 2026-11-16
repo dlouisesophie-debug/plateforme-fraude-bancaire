@@ -23,12 +23,27 @@ class Transaction(models.Model):
         FEMALE = "F", "Femme"
         MALE = "M", "Homme"
 
+    class OperationType(models.TextChoices):
+        # Types d'opération mobile money du modèle (PaySim) : la valeur en
+        # majuscules donne le type PaySim (cash_in -> CASH_IN, etc.).
+        CASH_IN = "cash_in", "Dépôt"
+        CASH_OUT = "cash_out", "Retrait"
+        TRANSFER = "transfer", "Transfert"
+        PAYMENT = "payment", "Paiement"
+        DEBIT = "debit", "Débit vers un compte bancaire"
+
     transaction_id = models.CharField(max_length=50, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     merchant = models.CharField(max_length=255, blank=True)
     device = models.CharField(max_length=100, blank=True)
     location = models.CharField(max_length=255, blank=True)
     channel = models.CharField(max_length=30, choices=Channel.choices)
+    # Mobile money uniquement : variable du modèle mobile money (obligatoire à la saisie
+    # pour ce canal, vide pour les autres canaux et pour les anciennes transactions).
+    # db_default : l'ancien code, qui ne connaît pas ce champ, peut toujours écrire en base.
+    operation_type = models.CharField(
+        max_length=20, choices=OperationType.choices, blank=True, default="", db_default="",
+    )
     timestamp = models.DateTimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     created_by = models.ForeignKey(
