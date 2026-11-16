@@ -20,6 +20,7 @@ export const TRANSACTION_FIELD_GROUPS = [
       ["transaction_id", "Identifiant"],
       ["amount", "Montant"],
       ["channel", "Canal"],
+      ["operation_type", "Type d'opération"],
       ["timestamp", "Date"],
       ["merchant", "Commerçant"],
       ["category", "Catégorie"],

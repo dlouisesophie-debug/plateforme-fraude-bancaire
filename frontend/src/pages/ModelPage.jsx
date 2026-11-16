@@ -4,7 +4,7 @@ import Layout from "../components/Layout";
 import StatTile from "../components/StatTile";
 import StatusBadge from "../components/StatusBadge";
 import Notice from "../components/Notice";
-import { ALGORITHM_CHOICES, labelFor } from "../constants/choices";
+import { ALGORITHM_CHOICES, MODEL_FAMILY_CHOICES, labelFor } from "../constants/choices";
 import { CARD_CLASS } from "../constants/ui";
 import { asList, formatDateTime, formatProbability, formatVersion } from "../utils/format";
 
@@ -27,7 +27,8 @@ function normalizeModel(model) {
 }
 
 export default function ModelPage() {
-  const [activeModel, setActiveModel] = useState(null);
+  // Un modèle actif par famille : carte (référence du tableau de bord) et mobile money.
+  const [activeModels, setActiveModels] = useState([]);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,7 +41,11 @@ export default function ModelPage() {
         const list = modelsRes.status === "fulfilled" ? asList(modelsRes.value.data) : [];
         setModels(list);
         const fromStats = statsRes.status === "fulfilled" ? statsRes.value.data.active_model : null;
-        setActiveModel(normalizeModel(fromStats || list.find((m) => m.is_active)));
+        const card = fromStats
+          ? { famille: "carte", ...fromStats }
+          : list.find((m) => m.is_active && (m.famille ?? "carte") === "carte");
+        const mobileMoney = list.find((m) => m.is_active && m.famille === "mobile_money");
+        setActiveModels([card, mobileMoney].filter(Boolean).map(normalizeModel));
         if (modelsRes.status === "rejected" && statsRes.status === "rejected") {
           setError("Impossible de charger les informations du modèle.");
         }
@@ -62,29 +67,33 @@ export default function ModelPage() {
 
       {!loading && !error && (
         <>
-          <section className={`${CARD_CLASS} mt-6`}>
-            <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">Modèle actif</p>
-            {activeModel ? (
-              <>
-                <p className="mt-2 font-display text-2xl font-semibold text-ink-primary">
-                  {labelFor(ALGORITHM_CHOICES, activeModel.algorithm)} {formatVersion(activeModel.version)}
-                </p>
-                <p className="mt-1 text-sm text-ink-secondary">Entraîné le {formatDateTime(activeModel.trained_at)}</p>
-              </>
-            ) : (
+          {activeModels.length === 0 && (
+            <section className={`${CARD_CLASS} mt-6`}>
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">Modèle actif</p>
               <p className="mt-2 text-sm text-ink-secondary">
                 Aucun modèle actif : les transactions ne sont pas scorées (commande « activer_modele_ml »).
               </p>
-            )}
-          </section>
-
-          {activeModel && (
-            <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-              {METRICS.map(([key, label]) => (
-                <StatTile key={key} label={label} value={formatProbability(activeModel[key])} />
-              ))}
-            </div>
+            </section>
           )}
+
+          {activeModels.map((model) => (
+            <div key={model.version}>
+              <section className={`${CARD_CLASS} mt-6`}>
+                <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">
+                  Modèle actif · {labelFor(MODEL_FAMILY_CHOICES, model.famille)}
+                </p>
+                <p className="mt-2 font-display text-2xl font-semibold text-ink-primary">
+                  {labelFor(ALGORITHM_CHOICES, model.algorithm)} {formatVersion(model.version)}
+                </p>
+                <p className="mt-1 text-sm text-ink-secondary">Entraîné le {formatDateTime(model.trained_at)}</p>
+              </section>
+              <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {METRICS.map(([key, label]) => (
+                  <StatTile key={key} label={label} value={formatProbability(model[key])} />
+                ))}
+              </div>
+            </div>
+          ))}
 
           <h2 className="mt-8 text-sm font-medium text-ink-primary">Historique des modèles</h2>
           <div className="mt-3 overflow-hidden rounded-xl border border-line bg-surface shadow-sm">
@@ -93,6 +102,7 @@ export default function ModelPage() {
                 <thead className="bg-canvas text-xs font-medium uppercase tracking-wide text-ink-secondary">
                   <tr>
                     <th className="px-4 py-3">Version</th>
+                    <th className="px-4 py-3">Famille</th>
                     <th className="px-4 py-3">Algorithme</th>
                     {METRICS.map(([key, label]) => (
                       <th key={key} className="px-4 py-3 text-right">
@@ -107,6 +117,7 @@ export default function ModelPage() {
                   {models.map((m) => (
                     <tr key={m.id} className="text-ink-primary">
                       <td className="whitespace-nowrap px-4 py-3 font-medium">{formatVersion(m.version)}</td>
+                      <td className="whitespace-nowrap px-4 py-3">{labelFor(MODEL_FAMILY_CHOICES, m.famille ?? "carte")}</td>
                       <td className="whitespace-nowrap px-4 py-3">{labelFor(ALGORITHM_CHOICES, m.algorithm)}</td>
                       {METRICS.map(([key]) => (
                         <td key={key} className="whitespace-nowrap px-4 py-3 text-right tabular-nums">
@@ -121,7 +132,7 @@ export default function ModelPage() {
                   ))}
                   {models.length === 0 && (
                     <tr>
-                      <td colSpan={METRICS.length + 4} className="px-4 py-6 text-center text-ink-secondary">
+                      <td colSpan={METRICS.length + 5} className="px-4 py-6 text-center text-ink-secondary">
                         Aucun modèle enregistré
                       </td>
                     </tr>

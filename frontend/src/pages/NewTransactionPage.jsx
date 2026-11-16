@@ -7,10 +7,11 @@ import Notice from "../components/Notice";
 import {
   CATEGORY_CHOICES,
   CHANNEL_CHOICES,
+  OPERATION_TYPE_CHOICES,
   REGION_CHOICES,
 } from "../constants/choices";
 import { CARD_CLASS, INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from "../constants/ui";
-import { apiErrorMessage, formatAmount, toDateTimeLocal } from "../utils/format";
+import { apiErrorMessage, formatTransactionAmount, toDateTimeLocal } from "../utils/format";
 import { scoringInfo } from "../utils/transaction";
 
 function newTransactionId() {
@@ -22,6 +23,7 @@ function emptyForm() {
     transaction_id: newTransactionId(),
     amount: "",
     channel: "card",
+    operation_type: "",
     timestamp: toDateTimeLocal(),
     merchant: "",
     category: "",
@@ -78,6 +80,20 @@ const PRESETS = {
     merchant_latitude: "14.898403094975828",
     merchant_longitude: "-14.017604647296018",
   },
+  // Mobile money : repris de backend/fraud_detection/sample_transactions.py, vérifiés sur le
+  // vrai modèle mobile money (seuil 0,9307 ; montants en unité du simulateur).
+  mobileNormal: {
+    amount: "50000",
+    channel: "mobile_money",
+    operation_type: "cash_out",
+    timestamp: "2026-10-11T14:00:00Z",
+  },
+  mobileSuspect: {
+    amount: "1000000",
+    channel: "mobile_money",
+    operation_type: "transfer",
+    timestamp: "2026-10-11T03:00:00Z",
+  },
 };
 
 const NUMBER_FIELDS = [
@@ -89,11 +105,17 @@ const NUMBER_FIELDS = [
   "merchant_longitude",
 ];
 
+// Mobile money : le modèle mobile money n'utilise que le type d'opération, le montant
+// et l'heure (contrat de données ML-4). Seuls ces champs sont envoyés.
+const MOBILE_MONEY_FIELDS = ["transaction_id", "amount", "channel", "timestamp", "operation_type"];
+
 // Les champs vides sont omis : le backend applique alors ses valeurs neutres.
 function toPayload(form) {
   const payload = {};
+  const mobileMoney = form.channel === "mobile_money";
   Object.entries(form).forEach(([key, value]) => {
     if (value === "" || value === null) return;
+    if (mobileMoney ? !MOBILE_MONEY_FIELDS.includes(key) : key === "operation_type") return;
     if (key === "timestamp") payload[key] = new Date(value).toISOString();
     else if (NUMBER_FIELDS.includes(key)) payload[key] = Number(value);
     else payload[key] = typeof value === "string" ? value.trim() : value;
@@ -149,7 +171,7 @@ function PaymentNotice({ result, scoring }) {
   const id = <span className="whitespace-nowrap">{result.transaction_id}</span>;
   const transaction = (
     <>
-      {id} <span className="whitespace-nowrap">({formatAmount(result.amount)})</span>
+      {id} <span className="whitespace-nowrap">({formatTransactionAmount(result)})</span>
     </>
   );
   if (scoring.isFraud === true) {
@@ -214,6 +236,7 @@ export default function NewTransactionPage() {
 
   const fieldProps = { form, onChange: handleChange };
   const scoring = result ? scoringInfo(result) : null;
+  const mobileMoney = form.channel === "mobile_money";
 
   return (
     <Layout>
@@ -231,6 +254,12 @@ export default function NewTransactionPage() {
           <button type="button" onClick={() => applyPreset("suspect")} className={SECONDARY_BUTTON}>
             Exemple suspect
           </button>
+          <button type="button" onClick={() => applyPreset("mobileNormal")} className={SECONDARY_BUTTON}>
+            Mobile money normal
+          </button>
+          <button type="button" onClick={() => applyPreset("mobileSuspect")} className={SECONDARY_BUTTON}>
+            Mobile money suspect
+          </button>
         </div>
       </div>
 
@@ -240,36 +269,61 @@ export default function NewTransactionPage() {
             <h2 className="text-sm font-medium text-ink-primary">Transaction</h2>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Identifiant" name="transaction_id" required {...fieldProps} />
-              <Field label="Montant (FCFA)" name="amount" type="number" min="1" step="1" required {...fieldProps} />
+              <Field
+                label={mobileMoney ? "Montant (unité du simulateur)" : "Montant (FCFA)"}
+                name="amount"
+                type="number"
+                min="1"
+                step="1"
+                required
+                {...fieldProps}
+              />
               <Field label="Canal" name="channel" required {...fieldProps}>
                 <Options choices={CHANNEL_CHOICES} />
               </Field>
+              {mobileMoney && (
+                <Field label="Type d'opération" name="operation_type" required {...fieldProps}>
+                  <Options choices={OPERATION_TYPE_CHOICES} placeholder="— Choisir —" />
+                </Field>
+              )}
               <Field label="Date et heure" name="timestamp" type="datetime-local" required {...fieldProps} />
-              <Field label="Commerçant" name="merchant" {...fieldProps} />
-              <Field label="Catégorie" name="category" {...fieldProps}>
-                <Options choices={CATEGORY_CHOICES} placeholder="— Choisir —" />
-              </Field>
-              <Field label="Appareil" name="device" placeholder="mobile, web, TPE..." {...fieldProps} />
-              <Field label="Lieu" name="location" {...fieldProps} />
-              <Field label="Latitude commerçant" name="merchant_latitude" type="number" step="any" {...fieldProps} />
-              <Field label="Longitude commerçant" name="merchant_longitude" type="number" step="any" {...fieldProps} />
+              {!mobileMoney && (
+                <>
+                  <Field label="Commerçant" name="merchant" {...fieldProps} />
+                  <Field label="Catégorie" name="category" {...fieldProps}>
+                    <Options choices={CATEGORY_CHOICES} placeholder="— Choisir —" />
+                  </Field>
+                  <Field label="Appareil" name="device" placeholder="mobile, web, TPE..." {...fieldProps} />
+                  <Field label="Lieu" name="location" {...fieldProps} />
+                  <Field label="Latitude commerçant" name="merchant_latitude" type="number" step="any" {...fieldProps} />
+                  <Field label="Longitude commerçant" name="merchant_longitude" type="number" step="any" {...fieldProps} />
+                </>
+              )}
             </div>
+            {mobileMoney && (
+              <p className="mt-4 text-sm text-ink-secondary">
+                Le modèle mobile money utilise le type d'opération, le montant et l'heure. Il est entraîné sur
+                PaySim, des données synthétiques : le montant est dans l'unité du simulateur, pas en FCFA.
+              </p>
+            )}
           </section>
 
-          <section className={CARD_CLASS}>
-            <h2 className="text-sm font-medium text-ink-primary">Client</h2>
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Date de naissance" name="customer_birth_date" type="date" {...fieldProps} />
-              <Field label="Profession" name="customer_profession" {...fieldProps} />
-              <Field label="Ville" name="customer_city" {...fieldProps} />
-              <Field label="Région" name="customer_region" {...fieldProps}>
-                <Options choices={REGION_CHOICES} placeholder="— Choisir —" />
-              </Field>
-              <Field label="Population de la ville" name="customer_city_population" type="number" min="0" step="1" {...fieldProps} />
-              <Field label="Latitude client" name="customer_latitude" type="number" step="any" {...fieldProps} />
-              <Field label="Longitude client" name="customer_longitude" type="number" step="any" {...fieldProps} />
-            </div>
-          </section>
+          {!mobileMoney && (
+            <section className={CARD_CLASS}>
+              <h2 className="text-sm font-medium text-ink-primary">Client</h2>
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Date de naissance" name="customer_birth_date" type="date" {...fieldProps} />
+                <Field label="Profession" name="customer_profession" {...fieldProps} />
+                <Field label="Ville" name="customer_city" {...fieldProps} />
+                <Field label="Région" name="customer_region" {...fieldProps}>
+                  <Options choices={REGION_CHOICES} placeholder="— Choisir —" />
+                </Field>
+                <Field label="Population de la ville" name="customer_city_population" type="number" min="0" step="1" {...fieldProps} />
+                <Field label="Latitude client" name="customer_latitude" type="number" step="any" {...fieldProps} />
+                <Field label="Longitude client" name="customer_longitude" type="number" step="any" {...fieldProps} />
+              </div>
+            </section>
+          )}
 
           <Notice>{error}</Notice>
 

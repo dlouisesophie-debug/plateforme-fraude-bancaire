@@ -11,7 +11,7 @@ import { useAuth } from "../hooks/useAuth";
 import { NAV_ITEMS, canAccess } from "../constants/roles";
 import { CHANNEL_CHOICES, TRANSACTION_STATUS_CHOICES, labelFor } from "../constants/choices";
 import { INPUT_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, SELECT_CLASS } from "../constants/ui";
-import { formatAmount, formatDateTime } from "../utils/format";
+import { formatDateTime, formatTransactionAmount } from "../utils/format";
 
 const PAGE_SIZE = 20;
 const COLUMNS = 6;
@@ -173,7 +173,7 @@ export default function TransactionsPage() {
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-ink-secondary">{formatDateTime(t.timestamp)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{formatAmount(t.amount)}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{formatTransactionAmount(t)}</td>
                     <td className="whitespace-nowrap px-4 py-3">{labelFor(CHANNEL_CHOICES, t.channel)}</td>
                     <td className="px-4 py-3">
                       <ScoreBadge value={t.fraud_probability} isFraud={t.is_fraud_predicted} />
