@@ -64,7 +64,8 @@ function AlertItem({ alert, onUpdated, onError }) {
           </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-ink-secondary">
-          Score <ScoreBadge value={alert.fraud_probability} />
+          {/* Une alerte n'est créée que si le modèle a prédit une fraude. */}
+          Score <ScoreBadge value={alert.fraud_probability} isFraud />
         </div>
       </div>
 

@@ -7,20 +7,22 @@ import { scoringInfo } from "../utils/transaction";
 
 // Bloc "verdict du modèle" : score, statut, version du modèle, alerte liée.
 export default function ScorePanel({ transaction, showAlertLink = false }) {
-  const { probability, modelVersion, alertId, alertStatus } = scoringInfo(transaction);
+  const { probability, modelVersion, isFraud, alertId, alertStatus } = scoringInfo(transaction);
   const scored = probability !== null && probability !== undefined;
+  // Même règle que ScoreBadge : la couleur suit la prédiction du modèle.
+  const barColor = isFraud === true ? "bg-danger" : isFraud === false ? "bg-success" : "bg-ink-secondary";
 
   return (
     <div className="rounded-xl border border-line bg-surface p-6 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">Score de fraude</p>
       {scored ? (
         <>
-          <p className={`mt-3 inline-flex rounded-xl px-4 py-2 text-4xl font-semibold tabular-nums ${scoreTone(Number(probability))}`}>
+          <p className={`mt-3 inline-flex rounded-xl px-4 py-2 text-4xl font-semibold tabular-nums ${scoreTone(isFraud)}`}>
             {formatProbability(probability)}
           </p>
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-canvas">
             <div
-              className={`h-full rounded-full ${Number(probability) >= 0.5 ? "bg-danger" : Number(probability) >= 0.1 ? "bg-warning" : "bg-success"}`}
+              className={`h-full rounded-full ${barColor}`}
               style={{ width: `${Math.min(100, Math.max(2, Number(probability) * 100))}%` }}
             />
           </div>

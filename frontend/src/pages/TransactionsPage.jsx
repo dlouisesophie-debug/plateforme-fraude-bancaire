@@ -176,7 +176,7 @@ export default function TransactionsPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums">{formatAmount(t.amount)}</td>
                     <td className="whitespace-nowrap px-4 py-3">{labelFor(CHANNEL_CHOICES, t.channel)}</td>
                     <td className="px-4 py-3">
-                      <ScoreBadge value={t.fraud_probability} />
+                      <ScoreBadge value={t.fraud_probability} isFraud={t.is_fraud_predicted} />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge value={t.status} label={labelFor(TRANSACTION_STATUS_CHOICES, t.status)} />
