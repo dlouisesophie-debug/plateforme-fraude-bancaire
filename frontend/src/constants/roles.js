@@ -1,6 +1,6 @@
 // Pages accessibles par rôle (CDC 5.1). L'admin voit tout.
 export const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", roles: ["admin", "analyst", "agent"] },
+  { to: "/", label: "Tableau de bord", roles: ["admin", "analyst", "agent"] },
   { to: "/transactions", label: "Transactions", roles: ["admin", "analyst", "agent"] },
   { to: "/transactions/new", label: "Nouvelle transaction", roles: ["admin", "agent"] },
   { to: "/alerts", label: "Alertes", roles: ["admin", "analyst"] },

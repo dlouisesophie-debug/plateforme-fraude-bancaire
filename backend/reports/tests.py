@@ -47,6 +47,14 @@ class ReportTests(APITestCase):
         chemin = Path(settings.MEDIA_ROOT) / data["file_path"]
         self.assertTrue(chemin.read_bytes().startswith(b"%PDF"))
 
+    def test_montant_du_detail_pdf_avec_separateur_de_milliers(self):
+        from .generation import format_montant_detail
+
+        self.assertEqual(format_montant_detail("265000,00"), "265 000")
+        self.assertEqual(format_montant_detail("1760000,00"), "1 760 000")
+        self.assertEqual(format_montant_detail("9839,64"), "9 839,64")
+        self.assertEqual(format_montant_detail("500,00"), "500")
+
     def test_periode_invalide(self):
         self.client.force_authenticate(self.agent)
         reponse = self.client.post(URL, {"title": "x", "type": "csv", "period_start": "2026-10-10",
