@@ -263,7 +263,7 @@ def _sans_proba(d: dict) -> dict:
 # 4. Programme principal
 # --------------------------------------------------------------------------
 def entrainer(chemin_csv: str, dossier_modeles: str, dossier_rapports: str, n_iter: int = 15,
-              cv: int = 3, recall_cible: float = RECALL_CIBLE, genre: str = "avec",
+              cv: int = 3, recall_cible: float = RECALL_CIBLE, genre: str = "sans",
               reutiliser_params: str = None) -> dict:
     debut = time.time()
     dossier_modeles, dossier_rapports = Path(dossier_modeles), Path(dossier_rapports)
@@ -435,8 +435,9 @@ def main(argv=None):
     p.add_argument("--recall-cible", type=float, default=RECALL_CIBLE)
     p.add_argument("--reutiliser-params", default=None,
                    help="fichier hyperparametres.json d'un entrainement precedent (saute la recherche)")
-    p.add_argument("--genre", choices=["avec", "sans"], default="avec",
-                   help="variable genre dans le modele exporte")
+    # « sans » par défaut : le modèle livré n'utilise pas le sexe du client (voir ml/README.md).
+    p.add_argument("--genre", choices=["avec", "sans"], default="sans",
+                   help="variable genre dans le modele exporte (par defaut : sans)")
     a = p.parse_args(argv)
     if not Path(a.data).exists():
         sys.exit(f"CSV introuvable : {a.data}\nUtilise --data chemin/vers/fraudTest_senegal.csv")
