@@ -1,0 +1,25 @@
+@startuml
+' Mis à jour le 19/11/2026 : service de scoring et deux modèles.
+!pragma layout smetana
+package "Client" {
+  [Application React] as React
+}
+
+package "Serveur" {
+  [API Django REST] as API
+  [Service de scoring] as Scoring
+}
+
+package "IA" {
+  [Modèle carte\n(XGBoost v2)] as MC
+  [Modèle mobile money\n(XGBoost mm-v1)] as MM
+}
+
+database PostgreSQL
+
+React --> API : HTTPS / JSON (JWT)
+API --> PostgreSQL
+API --> Scoring
+Scoring --> MC : carte, en ligne, virement
+Scoring --> MM : mobile money
+@enduml

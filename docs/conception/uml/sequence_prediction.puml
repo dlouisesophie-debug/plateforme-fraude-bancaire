@@ -1,0 +1,36 @@
+@startuml
+' Mis à jour le 19/11/2026 : saisie par l'agent, scoring par le modèle de la famille, décision de l'analyste.
+actor "Agent" as Agent
+participant "React" as React
+participant "API Django REST" as API
+participant "Service de scoring" as Scoring
+participant "Modèle ML\n(carte ou mobile money)" as ML
+database PostgreSQL
+actor "Analyste" as Analyste
+
+Agent -> React : saisit la transaction
+React -> API : POST /api/transactions/
+API -> PostgreSQL : enregistre la transaction (en attente)
+API -> Scoring : score_transaction(transaction)
+Scoring -> PostgreSQL : modèle actif de la famille
+Scoring -> ML : probabilité de fraude
+ML --> Scoring : probabilité
+alt probabilité ≥ seuil du modèle (fraude prédite)
+  Scoring -> PostgreSQL : prédiction + alerte,\nstatut « en cours d'examen »
+else non fraude
+  Scoring -> PostgreSQL : prédiction, statut « légitime »
+end
+API --> React : 201 Created (score, statut, alerte)
+React --> Agent : « Paiement suspendu » ou « Paiement accepté »
+
+== Décision de l'analyste ==
+Analyste -> React : ouvre les alertes
+React -> API : GET /api/alerts/
+API --> React : alertes (paiement suspendu depuis…)
+Analyste -> React : commente et confirme la fraude
+React -> API : POST /api/alerts/{id}/confirm/
+API -> PostgreSQL : alerte confirmée,\ntransaction « frauduleuse »
+API --> React : alerte à jour
+React --> Analyste : « Paiement refusé · vérifié en … »
+note over API, PostgreSQL : chaque requête est inscrite au journal d'audit
+@enduml
