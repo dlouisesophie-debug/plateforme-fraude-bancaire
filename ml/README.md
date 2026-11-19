@@ -75,6 +75,8 @@ Part du gain total de XGBoost attribuée à `genre` dans la version « avec » :
 
 **Décision : le modèle livré n'utilise PAS la variable `genre`.** Les intervalles de confiance du rappel et de la précision se chevauchent et l'écart d'AUC-ROC est de 0,0001 : la différence n'est pas statistiquement établie. On évite ainsi d'utiliser le sexe du client pour décider d'une alerte (RGPD, équité).
 
+`--genre sans` est la valeur par défaut de `training.py` : un nouvel entraînement exporte le modèle sans la variable `genre`, sauf si l'on demande explicitement `--genre avec`. La comparaison avec / sans reste calculée et écrite dans `reports/comparaison_genre.json`.
+
 ## Modèle Mobile Money (PaySim)
 
 Deuxième modèle, entraîné **séparément** du modèle carte, avec la même méthode (voir « Méthode »)
