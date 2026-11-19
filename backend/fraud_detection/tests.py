@@ -134,6 +134,31 @@ class CommandeActiverModeleTests(TestCase):
             call_command("activer_modele_ml", "inexistant.joblib", stdout=StringIO())
         self.assertFalse(MLModel.objects.exists())
 
+    def test_date_d_entrainement_lue_dans_le_fichier(self):
+        # « Entraîné le » : la date écrite par l'entraînement, pas celle de l'activation
+        # (au démarrage d'un conteneur Docker, la commande est relancée).
+        from predict import load_pipeline
+
+        pipeline = load_pipeline(os.path.join(settings.ML_MODELS_DIR, PIPELINE_FILE))
+        attendue = datetime.fromisoformat(pipeline["metriques"]["date_entrainement"])
+        self.lancer("--modele-version", "1")
+        self.lancer("--modele-version", "1")  # réactivation : la date ne bouge pas
+        self.assertEqual(MLModel.objects.get(version="1").trained_at, attendue)
+
+    def test_sans_date_dans_le_fichier_date_d_activation(self):
+        import tempfile
+
+        import joblib
+
+        with tempfile.TemporaryDirectory() as dossier:
+            chemin = os.path.join(dossier, "sans_date.joblib")
+            joblib.dump({"famille": "carte"}, chemin)
+            avant = datetime.now(timezone.utc)
+            sortie = StringIO()
+            call_command("activer_modele_ml", chemin, "--modele-version", "sans-date", stdout=sortie)
+        self.assertGreaterEqual(MLModel.objects.get(version="sans-date").trained_at, avant)
+        self.assertIn("absente du fichier", sortie.getvalue())
+
 
 class PermissionsAdminTests(TestCase):
     """IsAdmin accepte le role admin ET le superuser ; refuse les autres."""
