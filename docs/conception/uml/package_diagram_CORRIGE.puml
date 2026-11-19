@@ -1,4 +1,6 @@
 @startuml
+' Mis à jour le 19/11/2026 : deux modèles ML, alerte sur fraude prédite.
+!pragma layout smetana
 package "Frontend" {
   [Pages]
   [Components]
@@ -20,6 +22,8 @@ package "MachineLearning" {
   [Training]
   [Prediction]
   [Preprocessing]
+  [Modèle carte] as MC
+  [Modèle mobile money] as MM
 }
 
 database "PostgreSQL"
@@ -27,6 +31,8 @@ database "PostgreSQL"
 Frontend --> Backend
 Backend --> PostgreSQL
 Backend --> MachineLearning
-[Fraud Detection] --> [Alerts] : score > seuil
+[Fraud Detection] --> [Alerts] : fraude prédite\n(score ≥ seuil du modèle)
+[Fraud Detection] --> MC : carte, en ligne, virement
+[Fraud Detection] --> MM : mobile money
 [Authentication] --> [Audit] : journalisation
 @enduml
