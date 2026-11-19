@@ -114,7 +114,12 @@ function ConfusionMatrix({ confusion }) {
   return (
     <section className={CARD_CLASS}>
       <h2 className="text-sm font-medium text-ink-primary">Matrice de confusion</h2>
-      <p className="mt-0.5 text-xs text-ink-secondary">Prédictions du modèle comparées aux décisions des analystes</p>
+      {/* Seules les transactions signalées passent par un analyste : les autres sont classées
+          « légitimes » automatiquement. Les vrais négatifs ne sont donc pas des décisions humaines. */}
+      <p className="mt-0.5 text-xs text-ink-secondary">
+        Prédiction du modèle comparée au statut final : décision de l'analyste pour les alertes, statut
+        « légitime » automatique pour les autres transactions (sauf requalification)
+      </p>
       <div className="mt-4 grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-xs text-ink-secondary">
         <span />
         <span className="text-center font-medium">Prédit : fraude</span>
@@ -178,7 +183,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold text-ink-primary">Dashboard</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink-primary">Tableau de bord</h1>
         <div className="flex flex-wrap items-center gap-3">
           <select value={channel} onChange={(e) => setChannel(e.target.value)} aria-label="Canal" className={SELECT_CLASS}>
             <option value="">Tous les canaux</option>

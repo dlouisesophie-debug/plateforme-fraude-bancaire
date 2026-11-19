@@ -21,6 +21,18 @@ def _format_fcfa(valeur):
     return f"{valeur:,.0f}".replace(",", " ") + " FCFA"
 
 
+def format_montant_detail(texte):
+    """
+    Montant du détail des transactions du PDF, avec séparateur de milliers : « 265000,00 » devient
+    « 265 000 » (les centimes ne s'affichent que s'il y en a). Le CSV garde, lui, « 265000,00 »,
+    qu'Excel lit comme un nombre.
+    """
+    valeur = float(str(texte).replace(",", "."))
+    if valeur == int(valeur):
+        return f"{valeur:,.0f}".replace(",", " ")
+    return f"{valeur:,.2f}".replace(",", " ").replace(".", ",")
+
+
 def _format_pct(valeur):
     return "—" if valeur is None else f"{valeur * 100:.1f} %"
 
@@ -123,7 +135,8 @@ def generer_pdf(report, chemin):
     ))
     colonnes = [0, 1, 2, 3, 4, 8, 9, 10]  # sous-ensemble lisible en A4 paysage
     elements.append(tableau(
-        [[EN_TETES[i] for i in colonnes]] + [[str(ligne[i]) for i in colonnes] for ligne in lignes]
+        [[EN_TETES[i] for i in colonnes]]
+        + [[format_montant_detail(ligne[i]) if i == 2 else str(ligne[i]) for i in colonnes] for ligne in lignes]
     ) if lignes else Paragraph("Aucune transaction sur la période.", styles["Normal"]))
 
     document = SimpleDocTemplate(
