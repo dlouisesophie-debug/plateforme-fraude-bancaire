@@ -4,9 +4,12 @@
 # 3 ressources : PostgreSQL, API Django (Docker), frontend React (Docker + Nginx).
 #
 # URLs attendues (si les noms sont libres sur Render) :
-#   API      : https://fraudguard-api.onrender.com
-#   Frontend : https://fraudguard-web.onrender.com
-# Si Render ajoute un suffixe au nom (ex. fraudguard-api-x7k2), corriger
+#   API      : https://xelwoor-api.onrender.com
+#   Frontend : https://xelwoor-web.onrender.com
+# Les deux services web s'appelaient fraudguard-api et fraudguard-web : Render ne
+# permet pas de changer l'adresse d'un service, d'où de nouveaux services. La base
+# garde son nom (fraudguard-db) : il n'est pas visible et ne peut pas être changé.
+# Si Render ajoute un suffixe au nom (ex. xelwoor-api-x7k2), corriger
 # DJANGO_CORS_ALLOWED_ORIGINS et REACT_APP_API_URL dans le tableau de bord,
 # puis redéployer le frontend (l'URL de l'API est intégrée au build React).
 
@@ -20,7 +23,7 @@ databases:
 services:
   # ---------------- Backend : Django REST + modèle ML ----------------
   - type: web
-    name: fraudguard-api
+    name: xelwoor-api
     runtime: docker
     plan: free
     region: frankfurt
@@ -38,9 +41,9 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true    # clé aléatoire générée par Render, jamais dans Git
       - key: DJANGO_ALLOWED_HOSTS
-        value: fraudguard-api.onrender.com
+        value: xelwoor-api.onrender.com
       - key: DJANGO_CORS_ALLOWED_ORIGINS
-        value: https://fraudguard-web.onrender.com
+        value: https://xelwoor-web.onrender.com
       - key: FRAUD_ALERT_THRESHOLD
         value: "0.7"
       - key: WEB_CONCURRENCY
@@ -50,7 +53,7 @@ services:
 
   # ---------------- Frontend : build React servi par Nginx ----------------
   - type: web
-    name: fraudguard-web
+    name: xelwoor-web
     runtime: docker
     plan: free
     region: frankfurt
@@ -61,6 +64,6 @@ services:
     envVars:
       # Transmises comme build args (ARG du Dockerfile) : intégrées au build.
       - key: REACT_APP_API_URL
-        value: https://fraudguard-api.onrender.com/api
+        value: https://xelwoor-api.onrender.com/api
       - key: REACT_APP_USE_MOCKS
         value: "false"

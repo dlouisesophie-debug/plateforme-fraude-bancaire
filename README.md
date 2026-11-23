@@ -3,8 +3,8 @@
 Projet académique (Agile/Scrum) — équipe de 4 étudiants.
 
 **Application en ligne (Render)** :
-- Frontend : https://fraudguard-web.onrender.com
-- API : https://fraudguard-api.onrender.com/api — Swagger : https://fraudguard-api.onrender.com/api/docs/
+- Frontend : https://xelwoor-web.onrender.com
+- API : https://xelwoor-api.onrender.com/api — Swagger : https://xelwoor-api.onrender.com/api/docs/
 
 > Offre gratuite de Render : un service inactif depuis 15 minutes est mis en veille.
 > Ouvrir les deux URL **quelques minutes avant la démonstration** (premier chargement ≈ 1 minute).
@@ -34,7 +34,7 @@ scorées par le vrai modèle ML et des alertes en partie traitées) :
 
 Mot de passe :
 - **en local (Docker ou non)** : `FraudGuard2026!`
-- **sur Render** : celui choisi dans la variable `DEMO_PASSWORD` du service `fraudguard-api`
+- **sur Render** : celui choisi dans la variable `DEMO_PASSWORD` du service `xelwoor-api`
   (communiqué au jury séparément, jamais écrit dans le dépôt).
 
 ## Lancement avec Docker (recommandé pour la démo)
@@ -114,8 +114,8 @@ Le fichier `render.yaml` (Blueprint) décrit les 3 ressources :
 | Ressource Render | Type | Contenu |
 |---|---|---|
 | `fraudguard-db` | PostgreSQL 16 | Base de données |
-| `fraudguard-api` | Web Service (Docker, `backend/Dockerfile`) | Django + Gunicorn + modèle ML |
-| `fraudguard-web` | Web Service (Docker, `frontend/Dockerfile`) | Build React servi par Nginx |
+| `xelwoor-api` | Web Service (Docker, `backend/Dockerfile`) | Django + Gunicorn + modèle ML |
+| `xelwoor-web` | Web Service (Docker, `frontend/Dockerfile`) | Build React servi par Nginx |
 
 Déploiement initial : Render → **New → Blueprint** → choisir ce dépôt (branche `main`)
 → saisir `DEMO_PASSWORD` → **Apply**. Chaque fusion sur `main` redéploie automatiquement.
