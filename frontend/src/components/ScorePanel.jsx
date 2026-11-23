@@ -7,7 +7,7 @@ import { scoringInfo } from "../utils/transaction";
 
 // Bloc "verdict du modèle" : score, statut, version du modèle, alerte liée.
 export default function ScorePanel({ transaction, showAlertLink = false }) {
-  const { probability, modelVersion, isFraud, alertId, alertStatus } = scoringInfo(transaction);
+  const { probability, modelVersion, isFraud, threshold, alertId, alertStatus } = scoringInfo(transaction);
   const scored = probability !== null && probability !== undefined;
   // Même règle que ScoreBadge : la couleur suit la prédiction du modèle.
   const barColor = isFraud === true ? "bg-danger" : isFraud === false ? "bg-success" : "bg-ink-secondary";
@@ -26,6 +26,12 @@ export default function ScorePanel({ transaction, showAlertLink = false }) {
               style={{ width: `${Math.min(100, Math.max(2, Number(probability) * 100))}%` }}
             />
           </div>
+          {threshold !== null && threshold !== undefined && (
+            <p className="mt-2 text-xs text-ink-secondary">
+              Seuil de décision du modèle : {formatProbability(threshold)}. Chaque modèle a son propre seuil :
+              un score ne se compare qu'à celui-ci.
+            </p>
+          )}
         </>
       ) : (
         <p className="mt-3 text-sm text-ink-secondary">

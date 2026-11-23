@@ -7,6 +7,7 @@ export function scoringInfo(transaction) {
     probability: transaction?.fraud_probability ?? prediction.fraud_probability ?? null,
     modelVersion: transaction?.model_version ?? prediction.model_version ?? null,
     isFraud: transaction?.is_fraud_predicted ?? prediction.prediction ?? null,
+    threshold: transaction?.decision_threshold ?? prediction.decision_threshold ?? null,
     alertId: transaction?.alert_id ?? null,
     alertStatus: transaction?.alert_status ?? null,
   };
@@ -50,3 +51,15 @@ export const TRANSACTION_FIELD_GROUPS = [
     ],
   },
 ];
+
+// Un exemple garde l'heure de son jeu de démonstration (elle compte pour le modèle)
+// mais prend la date du jour, ou de la veille si cette heure n'est pas encore passée :
+// sinon une saisie du 19/11 serait datée du 11/10. Verdicts vérifiés sur 400 jours
+// consécutifs avec les vrais modèles : la date ne change pas le résultat de ces exemples.
+export function presetDate(timestamp, now = new Date()) {
+  const reference = new Date(timestamp);
+  const date = new Date(now);
+  date.setHours(reference.getHours(), reference.getMinutes(), 0, 0);
+  if (date > now) date.setDate(date.getDate() - 1);
+  return date;
+}

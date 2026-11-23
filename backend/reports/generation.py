@@ -34,7 +34,22 @@ def format_montant_detail(texte):
 
 
 def _format_pct(valeur):
-    return "—" if valeur is None else f"{valeur * 100:.1f} %"
+    return "—" if valeur is None else f"{valeur * 100:.1f} %".replace(".", ",")
+
+
+def _note_montants_hors_fcfa(stats, styles):
+    """Signale les opérations mobile money dont le montant (unité PaySim) n'est pas compté en FCFA."""
+    exclues = sum(c.get("amount_excluded_count", 0) for c in stats["by_channel"])
+    if not exclues:
+        return []
+    from reportlab.platypus import Paragraph
+
+    return [Paragraph(
+        f"Montants en FCFA uniquement : {exclues} opération(s) mobile money notée(s) par le modèle "
+        "mobile money, dont le montant est dans l'unité du simulateur PaySim, ne sont pas comptées "
+        "(ni dans ce tableau, ni dans le montant à risque).",
+        styles["Normal"],
+    )]
 
 
 def _chemin_rapport(report):
@@ -98,7 +113,7 @@ def generer_pdf(report, chemin):
             ["Volume total", "Transactions frauduleuses", "Taux de fraude", "Montant à risque", "Alertes actives"],
             [
                 str(kpis["total_transactions"]), str(kpis["fraudulent_transactions"]),
-                f"{kpis['fraud_rate']:.2f} %", _format_fcfa(kpis["amount_at_risk"]),
+                f"{kpis['fraud_rate']:.2f} %".replace(".", ","), _format_fcfa(kpis["amount_at_risk"]),
                 str(kpis["active_alerts"]),
             ],
         ]),
@@ -111,6 +126,7 @@ def generer_pdf(report, chemin):
                 for c in stats["by_channel"]
             ]
         ),
+        *_note_montants_hors_fcfa(stats, styles),
         Spacer(1, 0.4 * cm),
         Paragraph("Performance du modèle en production (matrice de confusion)", styles["Heading2"]),
         tableau([
@@ -119,8 +135,9 @@ def generer_pdf(report, chemin):
             ["Légitime réelle", str(matrice["false_positive"]), str(matrice["true_negative"])],
         ]),
         Paragraph(
-            f"Précision : {_format_pct(matrice['precision'])} · Rappel : {_format_pct(matrice['recall'])} "
-            f"· {matrice['evaluated']} transactions tranchées",
+            f"Précision : {_format_pct(matrice['precision'])} · {matrice['evaluated']} transactions tranchées. "
+            "Rappel non mesurable en production : une fraude non signalée n'apparaît que si la transaction "
+            "est requalifiée (le rappel du modèle est mesuré sur le jeu de test).",
             styles["Normal"],
         ),
         Spacer(1, 0.4 * cm),
@@ -134,9 +151,16 @@ def generer_pdf(report, chemin):
         styles["Heading2"],
     ))
     colonnes = [0, 1, 2, 3, 4, 8, 9, 10]  # sous-ensemble lisible en A4 paysage
+    unite = EN_TETES.index("Unité du montant")
+
+    def cellule(ligne, i):
+        if i != 2:
+            return str(ligne[i])
+        # Montant suivi de son unité : FCFA, ou unité du simulateur (mobile money, modèle PaySim).
+        return f"{format_montant_detail(ligne[i])} {'FCFA' if ligne[unite] == 'FCFA' else '(u. simulateur)'}"
+
     elements.append(tableau(
-        [[EN_TETES[i] for i in colonnes]]
-        + [[format_montant_detail(ligne[i]) if i == 2 else str(ligne[i]) for i in colonnes] for ligne in lignes]
+        [[EN_TETES[i] for i in colonnes]] + [[cellule(ligne, i) for i in colonnes] for ligne in lignes]
     ) if lignes else Paragraph("Aucune transaction sur la période.", styles["Normal"]))
 
     document = SimpleDocTemplate(

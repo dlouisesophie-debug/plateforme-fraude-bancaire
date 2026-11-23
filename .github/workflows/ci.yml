@@ -102,6 +102,9 @@ jobs:
       - name: Installer les dépendances
         working-directory: frontend
         run: npm ci
+      - name: Tests unitaires (formatage des montants, scores, durées)
+        working-directory: frontend
+        run: npm test -- --watchAll=false
       - name: Build de production
         working-directory: frontend
         env:

@@ -70,6 +70,7 @@ function normalizeStats(data) {
     total,
     fraudRate: kpis.fraud_rate ?? (total > 0 ? (fraudulent / total) * 100 : 0),
     amountAtRisk: kpis.amount_at_risk ?? 0,
+    amountAtRiskExcluded: Number(kpis.amount_at_risk_excluded_count ?? 0),
     openAlerts: kpis.active_alerts ?? 0,
     byStatus,
     daily: (data.daily || []).map((d) => ({
@@ -103,7 +104,6 @@ function ChartCard({ title, subtitle, children, empty }) {
 function ConfusionMatrix({ confusion }) {
   const { tp, fp, tn, fn } = confusion;
   const precision = tp + fp > 0 ? (tp / (tp + fp)) * 100 : null;
-  const recall = tp + fn > 0 ? (tp / (tp + fn)) * 100 : null;
   const cell = (value, label, good) => (
     <div className={`rounded-xl p-4 text-center ${good ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
       <p className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</p>
@@ -136,11 +136,12 @@ function ConfusionMatrix({ confusion }) {
           <dt className="text-ink-secondary">Précision</dt>
           <dd className="font-medium text-ink-primary">{precision === null ? "—" : formatPercent(precision)}</dd>
         </div>
-        <div className="flex gap-2">
-          <dt className="text-ink-secondary">Rappel</dt>
-          <dd className="font-medium text-ink-primary">{recall === null ? "—" : formatPercent(recall)}</dd>
-        </div>
       </dl>
+      {/* Le rappel n'est pas affiché : une fraude manquée n'apparaît ici que si quelqu'un requalifie la
+          transaction, le chiffre serait donc trompeur. Les performances se mesurent sur le jeu de test. */}
+      <p className="mt-2 text-xs text-ink-secondary">
+        Rappel non mesurable ici : une fraude non signalée n'apparaît que si la transaction est requalifiée.
+      </p>
     </section>
   );
 }
@@ -206,7 +207,15 @@ export default function DashboardPage() {
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="Volume total" value={formatNumber(stats.total)} />
             <StatTile label="Taux de fraude" value={formatPercent(stats.fraudRate)} />
-            <StatTile label="Montant à risque" value={formatAmount(stats.amountAtRisk)} />
+            <StatTile
+              label="Montant à risque"
+              value={formatAmount(stats.amountAtRisk)}
+              hint={
+                stats.amountAtRiskExcluded > 0
+                  ? `Hors ${formatNumber(stats.amountAtRiskExcluded)} opération(s) mobile money en unité du simulateur`
+                  : undefined
+              }
+            />
             <StatTile label="Alertes ouvertes" value={formatNumber(stats.openAlerts)} />
           </div>
 

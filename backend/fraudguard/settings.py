@@ -167,7 +167,7 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "XelWóor API",
-    "DESCRIPTION": "API de detection de fraude bancaire",
+    "DESCRIPTION": "API de détection de la fraude aux paiements (carte, virement, paiement en ligne, mobile money)",
     "VERSION": "1.0.0",
     # Noms explicites pour les différents champs "status" dans Swagger.
     "ENUM_NAME_OVERRIDES": {
