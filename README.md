@@ -51,7 +51,7 @@ Aucun fichier `.env` n'est nécessaire : des valeurs de démonstration sont pré
 Au démarrage, le backend exécute automatiquement (`backend/docker-entrypoint.sh`) :
 
 1. `python manage.py migrate`
-2. `python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v1 ...`
+2. `python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v2 ...`
 3. `python manage.py seed_demo --simuler-decisions` (seulement si aucune donnée de démo n'existe)
 4. Gunicorn (serveur de production)
 
@@ -80,7 +80,8 @@ python -m venv venv
 source venv/bin/activate           # Windows : venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v1
+python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v2 \
+    --algorithm xgboost --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 python manage.py seed_demo --simuler-decisions
 python manage.py runserver         # http://localhost:8000
 

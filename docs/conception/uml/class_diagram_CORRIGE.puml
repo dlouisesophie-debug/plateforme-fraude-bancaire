@@ -1,6 +1,7 @@
 @startuml
 !include charte.iuml
 ' Mis à jour le 19/11/2026 d'après les modèles Django : famille du modèle ML, canal et type d'opération.
+' Complété le 23/11/2026 : données du client et seuil de décision enregistré avec la prédiction.
 !pragma layout smetana
 
 class User {
@@ -27,12 +28,24 @@ class Transaction {
   timestamp : datetime
   status : pending | legitimate | fraudulent | under_review
   created_at : datetime
+  .. données du client (variables du modèle carte) ..
+  customer_gender : F | M (plus utilisé par le modèle v2)
+  customer_birth_date : date
+  customer_city : string
+  customer_region : string
+  customer_city_population : int
+  customer_profession : string
+  customer_latitude : float
+  customer_longitude : float
+  merchant_latitude : float
+  merchant_longitude : float
 }
 
 class Prediction {
   id : int
   fraud_probability : float
   prediction : boolean
+  decision_threshold : float
   prediction_date : datetime
 }
 

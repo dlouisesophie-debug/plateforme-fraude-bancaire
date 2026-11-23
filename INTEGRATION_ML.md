@@ -72,7 +72,8 @@ seulement si son fichier est présent).
 
 ```bash
 docker compose up --build -d          # applique aussi les migrations
-docker compose exec backend python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version 1 --algorithm xgboost --precision 0.90 --recall 0.80 --f1 0.847 --auc 0.9933
+# inutile en temps normal : docker-entrypoint.sh active déjà le modèle au démarrage
+docker compose exec backend python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v2 --algorithm xgboost --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 ```
 
 ## Mise en route en local (sans Docker)
@@ -100,7 +101,7 @@ supposent que les commandes sont lancées depuis `backend/`.
 ```bash
 python manage.py migrate
 python manage.py createsuperuser
-python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version 1 --algorithm xgboost --precision 0.90 --recall 0.80 --f1 0.847 --auc 0.9933
+python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v2 --algorithm xgboost --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 python manage.py runserver
 ```
 

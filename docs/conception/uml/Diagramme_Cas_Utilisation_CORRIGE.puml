@@ -9,7 +9,7 @@ left to right direction
 actor "Administrateur" as Admin
 actor "Analyste Fraude" as Analyst
 actor "Agent Financier" as Agent
-actor "Système ML" as ML <<secondary>>
+actor "Système ML" as ML <<secondaire>>
 
 rectangle "XelWóor — plateforme de détection de la fraude aux paiements" {
   usecase "Se connecter\n(JWT)" as UC1
