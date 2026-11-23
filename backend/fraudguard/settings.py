@@ -28,7 +28,7 @@ ALLOWED_HOSTS = [
     for hote in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
     if hote.strip()
 ]
-# Render fournit le nom d'hôte public du service (ex. fraudguard-api.onrender.com).
+# Render fournit le nom d'hôte public du service (ex. xelwoor-api.onrender.com).
 RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -177,7 +177,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Origines autorisées à appeler l'API (frontend React). Liste séparée par des
-# virgules dans le .env, ex. : http://localhost:3000,https://fraudguard.onrender.com
+# virgules dans le .env, ex. : http://localhost:3000,https://xelwoor-web.onrender.com
 CORS_ALLOWED_ORIGINS = [
     origine.strip()
     for origine in os.getenv(
