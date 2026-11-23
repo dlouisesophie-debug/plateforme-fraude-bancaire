@@ -31,13 +31,13 @@ Navigateur
 
 | Nœud Render | Type | Image / artefact | Port | Rôle |
 |---|---|---|---|---|
-| `fraudguard-web` | Web Service, runtime Docker | `frontend/Dockerfile` : build Node 20 → Nginx 1.27 | `$PORT` (Render) | Sert l'application React (SPA) en HTTPS |
-| `fraudguard-api` | Web Service, runtime Docker | `backend/Dockerfile` : Python 3.12, Gunicorn, Django, `ml_models/fraudguard_pipeline.joblib`, `ml_src/` | `$PORT` (Render) | API REST, JWT, scoring ML, rapports PDF/CSV, Swagger |
+| `xelwoor-web` | Web Service, runtime Docker | `frontend/Dockerfile` : build Node 20 → Nginx 1.27 | `$PORT` (Render) | Sert l'application React (SPA) en HTTPS |
+| `xelwoor-api` | Web Service, runtime Docker | `backend/Dockerfile` : Python 3.12, Gunicorn, Django, `ml_models/fraudguard_pipeline.joblib`, `ml_src/` | `$PORT` (Render) | API REST, JWT, scoring ML, rapports PDF/CSV, Swagger |
 | `fraudguard-db` | PostgreSQL 16 managé | — | 5432 (réseau privé Render) | Base de données |
 
 Flux :
-1. Le navigateur charge `https://fraudguard-web.onrender.com` (HTML/JS/CSS servis par Nginx).
-2. Le JavaScript appelle `https://fraudguard-api.onrender.com/api/...` avec un jeton JWT (CORS limité à l'URL du frontend).
+1. Le navigateur charge `https://xelwoor-web.onrender.com` (HTML/JS/CSS servis par Nginx).
+2. Le JavaScript appelle `https://xelwoor-api.onrender.com/api/...` avec un jeton JWT (CORS limité à l'URL du frontend).
 3. Le proxy de Render termine le TLS (HTTPS) et transmet au conteneur Gunicorn (`X-Forwarded-Proto: https`).
 4. Django lit/écrit dans `fraudguard-db` via `DATABASE_URL` ; à la saisie d'une transaction, `fraud_detection.services` charge le pipeline `.joblib` (en cache) et produit la probabilité de fraude, puis l'alerte si le seuil est dépassé.
 5. Render interroge `/api/health/` (application + base) pour décider si le service est prêt.
@@ -77,14 +77,38 @@ ensuite fusionner `develop` → `main`.
 3. Render lit `render.yaml` et propose 3 ressources. Saisir `DEMO_PASSWORD`
    (mot de passe des comptes démo, à garder pour le jury) → **Apply**.
 4. Attendre la fin des builds (≈ 10 min la première fois). Dans les journaux de
-   `fraudguard-api`, on doit voir : `Modele ML ... active`, `40 transactions de démo créées`,
+   `xelwoor-api`, on doit voir : `Modele ML ... active`, `40 transactions de démo créées`,
    `Listening at: http://0.0.0.0:...`.
 5. **Vérifier les URL** réellement attribuées. Si Render a ajouté un suffixe (ex.
-   `fraudguard-api-x7k2.onrender.com`) :
-   - `fraudguard-api` → Environment → `DJANGO_ALLOWED_HOSTS` et `DJANGO_CORS_ALLOWED_ORIGINS` ;
-   - `fraudguard-web` → Environment → `REACT_APP_API_URL`, puis **Manual Deploy**
+   `xelwoor-api-x7k2.onrender.com`) :
+   - `xelwoor-api` → Environment → `DJANGO_ALLOWED_HOSTS` et `DJANGO_CORS_ALLOWED_ORIGINS` ;
+   - `xelwoor-web` → Environment → `REACT_APP_API_URL`, puis **Manual Deploy**
      (l'URL est intégrée au moment du build) ;
    - corriger aussi `render.yaml` et le README dans le dépôt.
+
+### Passage aux adresses XelWóor (services créés avant le 23/11/2026)
+
+Les services web s'appelaient `fraudguard-api` et `fraudguard-web`. Render ne permet pas de
+changer l'adresse `onrender.com` d'un service (renommer un service ne change que son nom
+affiché) : il faut donc créer `xelwoor-api` et `xelwoor-web`. La base `fraudguard-db` est
+gardée telle quelle, avec ses données.
+
+1. Après la fusion de `develop` dans `main` : **Blueprints** → le Blueprint du projet →
+   **Manual Sync** (inutile si la synchronisation automatique est active : elle part dès la
+   fusion). Render doit proposer **deux nouveaux services** (`xelwoor-api`, `xelwoor-web`)
+   et aucune nouvelle base. S'il propose une deuxième base, annuler et passer par le cas
+   ci-dessous.
+   - Si les services n'avaient pas été créés par un Blueprint : **New → Web Service**, deux
+     fois, en recopiant les réglages de `render.yaml` (Docker, Dockerfile, contexte, variables
+     d'environnement, connexion à `fraudguard-db`).
+   - Dans `xelwoor-api` → **Environment**, vérifier que `DEMO_PASSWORD` est renseigné (même
+     valeur qu'avant). Les comptes démo existent déjà dans la base : leur mot de passe ne
+     change pas.
+2. Vérifier les adresses obtenues (étape 5 ci-dessus si Render a ajouté un suffixe), puis
+   faire la recette ci-dessous sur les nouvelles adresses.
+3. Supprimer `fraudguard-api` et `fraudguard-web` (**Settings → Delete Web Service**).
+   Retirer un service de `render.yaml` ne le supprime pas : il reste en place, non géré, tant
+   qu'on ne l'a pas supprimé à la main.
 
 ### Recette après déploiement (à faire et noter avant la soutenance)
 

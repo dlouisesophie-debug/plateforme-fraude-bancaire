@@ -29,13 +29,13 @@ class HttpsProductionTests(TestCase):
         reponse = self.client.get("/api/health/")
         self.assertEqual(reponse.status_code, 200)
 
-    @override_settings(ALLOWED_HOSTS=["fraudguard-api.onrender.com"])
+    @override_settings(ALLOWED_HOSTS=["xelwoor-api.onrender.com"])
     def test_health_repond_a_la_sonde_interne_de_render(self):
         # La sonde Render utilise l'adresse interne du conteneur comme Host.
         reponse = self.client.get("/api/health/", HTTP_HOST="10.201.3.7:10000")
         self.assertEqual(reponse.status_code, 200)
 
-    @override_settings(ALLOWED_HOSTS=["fraudguard-api.onrender.com"])
+    @override_settings(ALLOWED_HOSTS=["xelwoor-api.onrender.com"])
     def test_api_refuse_un_hote_inconnu(self):
         reponse = self.client.get("/api/transactions/", HTTP_HOST="pirate.example",
                                   HTTP_X_FORWARDED_PROTO="https")

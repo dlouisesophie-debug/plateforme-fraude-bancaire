@@ -84,7 +84,7 @@ jobs:
         working-directory: backend
         env:
           DJANGO_DEBUG: "False"
-          DJANGO_ALLOWED_HOSTS: fraudguard-api.onrender.com
+          DJANGO_ALLOWED_HOSTS: xelwoor-api.onrender.com
         run: |
           export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
           python manage.py check --deploy --fail-level WARNING
@@ -108,7 +108,7 @@ jobs:
       - name: Build de production
         working-directory: frontend
         env:
-          REACT_APP_API_URL: https://fraudguard-api.onrender.com/api
+          REACT_APP_API_URL: https://xelwoor-api.onrender.com/api
           REACT_APP_USE_MOCKS: "false"
         run: npm run build
 
