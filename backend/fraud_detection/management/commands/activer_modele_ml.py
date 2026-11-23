@@ -5,9 +5,9 @@ activer_modele_ml.py.
 
 Usage (depuis le dossier backend/, conteneur ou venv) :
 
-    python manage.py activer_modele_ml ml_models/fraudguard_pipeline.joblib \
-        --modele-version v1 --algorithm xgboost \
-        --precision 0.90 --recall 0.80 --f1 0.847 --auc 0.9933
+    python manage.py activer_modele_ml fraudguard_pipeline.joblib \
+        --modele-version v2 --algorithm xgboost \
+        --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 
 Le chemin peut etre relatif a settings.ML_MODELS_DIR (recommande, c'est le
 dossier monte par docker-compose, volume ./ml/models:/app/ml_models) ou
