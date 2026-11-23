@@ -26,6 +26,9 @@ class AlertSerializer(serializers.ModelSerializer):
     transaction_status = serializers.CharField(source="prediction.transaction.status", read_only=True)
     fraud_probability = serializers.FloatField(source="prediction.fraud_probability", read_only=True)
     model_version = serializers.CharField(source="prediction.ml_model.version", read_only=True)
+    decision_threshold = serializers.FloatField(
+        source="prediction.decision_threshold", read_only=True, allow_null=True,
+    )
     status_label = serializers.CharField(source="get_status_display", read_only=True)
     severity_label = serializers.CharField(source="get_severity_display", read_only=True)
     assigned_to_username = serializers.CharField(

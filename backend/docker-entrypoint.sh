@@ -47,7 +47,7 @@ echo "[entrypoint] Activation du modèle ML ($ML_MODEL_FILE, $ML_MODEL_VERSION).
 # Métriques mesurées sur le jeu de TEST (ml/reports/metriques.json).
 python manage.py activer_modele_ml "$ML_MODEL_FILE" \
     --modele-version "$ML_MODEL_VERSION" --algorithm xgboost \
-    --precision 0.6075 --recall 0.8695 --f1 0.7152 --auc 0.9945
+    --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 
 # Modèle mobile money (famille lue dans le fichier) : activé seulement s'il est
 # livré dans ml/models. Sans lui, le mobile money reste scoré par le modèle carte.
@@ -57,7 +57,7 @@ if python manage.py shell -c "import os, sys; from django.conf import settings; 
     # AUC mesurée sur les transferts et retraits.
     python manage.py activer_modele_ml "$ML_MM_MODEL_FILE" \
         --modele-version "$ML_MM_MODEL_VERSION" --algorithm xgboost \
-        --precision 0.1245 --recall 0.4711 --f1 0.1969 --auc 0.8822
+        --precision 0.124477 --recall 0.471089 --f1 0.196922 --auc 0.882237
 else
     echo "[entrypoint] Pas de modèle mobile money ($ML_MM_MODEL_FILE) : scoring par le modèle carte."
 fi

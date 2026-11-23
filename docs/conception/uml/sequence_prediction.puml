@@ -1,4 +1,5 @@
 @startuml
+!include charte.iuml
 ' Mis à jour le 19/11/2026 : saisie par l'agent, scoring par le modèle de la famille, décision de l'analyste.
 actor "Agent" as Agent
 participant "React" as React
@@ -32,5 +33,5 @@ React -> API : POST /api/alerts/{id}/confirm/
 API -> PostgreSQL : alerte confirmée,\ntransaction « frauduleuse »
 API --> React : alerte à jour
 React --> Analyste : « Paiement refusé · vérifié en … »
-note over API, PostgreSQL : chaque requête est inscrite au journal d'audit
+note over API, PostgreSQL : chaque écriture (POST, PUT, PATCH, DELETE) et chaque lecture sensible\n(fiche transaction, export CSV, rapport) est inscrite au journal d'audit
 @enduml

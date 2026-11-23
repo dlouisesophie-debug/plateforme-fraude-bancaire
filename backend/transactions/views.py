@@ -7,7 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 
-from authentication.permissions import IsAdmin, IsAdminOrAgent, IsAdminOrAnalyst
+from authentication.permissions import IsAdminOrAgent, IsAdminOrAnalyst
 from .exports import ecrire_csv
 from .filters import TransactionFilter
 from .models import Transaction
@@ -30,8 +30,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
     - lecture et export : tout utilisateur authentifié ;
     - création : Agent Financier ou Administrateur ;
     - modification : Analyste ou Administrateur, statut uniquement ;
-    - suppression : Administrateur uniquement.
+    - suppression : aucune. Le CDC (5.2) ne la prévoit pas, et elle effacerait aussi
+      la prédiction et l'alerte (traçabilité perdue) : DELETE renvoie 405.
     """
+
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
 
     queryset = (
         Transaction.objects.all()
@@ -55,8 +58,6 @@ class TransactionViewSet(viewsets.ModelViewSet):
             return [IsAdminOrAgent()]
         if self.action in ("update", "partial_update"):
             return [IsAdminOrAnalyst()]
-        if self.action == "destroy":
-            return [IsAdmin()]
         return super().get_permissions()
 
     def perform_create(self, serializer):

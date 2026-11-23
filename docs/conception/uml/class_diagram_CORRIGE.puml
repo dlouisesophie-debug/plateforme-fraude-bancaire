@@ -1,4 +1,5 @@
 @startuml
+!include charte.iuml
 ' Mis à jour le 19/11/2026 d'après les modèles Django : famille du modèle ML, canal et type d'opération.
 !pragma layout smetana
 
@@ -37,7 +38,7 @@ class Prediction {
 
 class Alert {
   id : int
-  status : open | confirmed | rejected
+  status : open | confirmed | rejected | resolved
   severity : low | medium | high | critical
   comment : string
   created_at : datetime
@@ -76,12 +77,12 @@ class AuditLog {
   created_at : datetime
 }
 
-User "1" -- "0..*" Transaction : saisit >
+User "0..1" -- "0..*" Transaction : saisit >
 Transaction "1" -- "0..1" Prediction : génère >
 Prediction "1" -- "0..1" Alert : déclenche >
 Alert "0..*" -- "0..1" User : traitée par >
 Prediction "0..*" -- "1" MLModel : produite par >
-User "1" -- "0..*" Report : génère >
+User "0..1" -- "0..*" Report : génère >
 User "0..1" -- "0..*" AuditLog : trace >
 
 note right of Transaction

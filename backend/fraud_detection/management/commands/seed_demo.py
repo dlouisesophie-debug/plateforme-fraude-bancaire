@@ -70,6 +70,9 @@ def _transaction_aleatoire(rng, numero, a_risque, jours):
     horodatage = timezone.make_aware(
         timezone.datetime(jour.year, jour.month, jour.day, heure, rng.randrange(60))
     )
+    if horodatage > timezone.now():
+        # Jour courant, heure pas encore passée : la veille, jamais une transaction dans le futur.
+        horodatage -= timedelta(days=1)
     return {
         "transaction_id": f"{PREFIXE}{numero:03d}",
         "amount": Decimal(montant),
@@ -77,6 +80,8 @@ def _transaction_aleatoire(rng, numero, a_risque, jours):
         "device": rng.choice(["mobile", "web", "tpe"]),
         "location": ville,
         "channel": canal,
+        # Sans type d'opération, une transaction mobile money serait notée par le modèle carte.
+        "operation_type": (rng.choice(["cash_out", "transfer", "payment"]) if canal == "mobile_money" else ""),
         "timestamp": horodatage,
         "category": categorie,
         "customer_gender": rng.choice(["F", "M"]),
@@ -137,7 +142,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"{options['nombre']} transactions de démo créées et scorées, dont {nb_alertes} signalées "
             f"par le modèle. Comptes : admin.demo / analyste.demo / agent.demo "
-            f"(mot de passe : {options['mot_de_passe']})."
+            f"(mot de passe : celui de --mot-de-passe, non affiché)."
         ))
 
     def _creer_comptes(self, mot_de_passe):
@@ -168,15 +173,23 @@ class Command(BaseCommand):
         ouvertes = Alert.objects.filter(
             status=Alert.Status.OPEN, prediction__transaction__transaction_id__startswith=PREFIXE,
         ).select_related("prediction__transaction")
+        maintenant = timezone.now()
         for alerte in ouvertes:
             if rng.random() < 1 / 3:
                 continue
             fraude = rng.random() < alerte.prediction.fraud_probability
-            alerte.status = Alert.Status.CONFIRMED if fraude else Alert.Status.REJECTED
-            alerte.assigned_to = analyste
-            alerte.resolved_at = timezone.now()
-            alerte.comment = "Décision simulée (données de démonstration)."
-            alerte.save()
             t = alerte.prediction.transaction
+            # Délai réaliste : alerte levée à l'heure de la transaction, traitée 5 à 90 min
+            # plus tard (jamais dans le futur). Sans cela, toutes les alertes seraient
+            # « vérifiées en moins d'une minute ». update() : created_at est en auto_now_add.
+            creee = min(t.timestamp, maintenant)
+            traitee = min(creee + timedelta(minutes=rng.randrange(5, 91)), maintenant)
+            Alert.objects.filter(pk=alerte.pk).update(
+                status=Alert.Status.CONFIRMED if fraude else Alert.Status.REJECTED,
+                assigned_to=analyste,
+                created_at=creee,
+                resolved_at=traitee,
+                comment="Décision simulée (données de démonstration).",
+            )
             t.status = Transaction.Status.FRAUDULENT if fraude else Transaction.Status.LEGITIMATE
             t.save(update_fields=["status"])

@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -10,7 +10,8 @@ from .models import Alert
 from .serializers import AlertSerializer
 
 
-class AlertViewSet(viewsets.ModelViewSet):
+class AlertViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin,
+                   viewsets.GenericViewSet):
     """
     CDC — cas d'utilisation "Traiter une alerte" : consulter, statuer
     (confirmer/rejeter), annoter. Réservé à l'Analyste Fraude et à l'Admin.
@@ -18,6 +19,9 @@ class AlertViewSet(viewsets.ModelViewSet):
     - POST /api/alerts/{id}/confirm/  {"comment": "..."} (commentaire facultatif)
     - POST /api/alerts/{id}/reject/   {"comment": "..."}
     - PATCH /api/alerts/{id}/         {"comment": "..."} pour annoter seulement
+
+    Pas de création ni de suppression par l'API : une alerte ne naît que du scoring,
+    et la supprimer effacerait une preuve.
     """
 
     queryset = (

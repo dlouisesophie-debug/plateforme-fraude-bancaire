@@ -4,6 +4,10 @@ const percentFormatter = new Intl.NumberFormat("fr-FR", { maximumFractionDigits:
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short" });
 const dateTimeFormatter = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" });
 
+// Intl (fr-FR) sépare les milliers par une espace fine insécable (U+202F), que certaines
+// polices affichent sans largeur (« 1760000 FCFA » sur Mac) : on met une espace insécable (U+00A0).
+const espaces = (texte) => texte.replace(/\u202F/g, "\u00A0");
+
 function isMissing(value) {
   return value === null || value === undefined || value === "";
 }
@@ -11,12 +15,12 @@ function isMissing(value) {
 // "640000.00" -> "640 000 FCFA"
 export function formatAmount(value) {
   if (isMissing(value) || Number.isNaN(Number(value))) return "—";
-  return `${integerFormatter.format(Number(value))} FCFA`;
+  return `${espaces(integerFormatter.format(Number(value)))} FCFA`;
 }
 
 export function formatNumber(value) {
   if (isMissing(value)) return "—";
-  return numberFormatter.format(Number(value));
+  return espaces(numberFormatter.format(Number(value)));
 }
 
 // Montant d'une transaction (ou d'une alerte) : en FCFA, sauf en mobile money avec un
@@ -24,13 +28,20 @@ export function formatNumber(value) {
 export function formatTransactionAmount(item) {
   if (!item?.operation_type) return formatAmount(item?.amount);
   if (isMissing(item.amount) || Number.isNaN(Number(item.amount))) return "—";
-  return `${integerFormatter.format(Number(item.amount))} (unité simulateur)`;
+  return `${espaces(integerFormatter.format(Number(item.amount)))} (unité simulateur)`;
 }
 
-// Probabilité 0..1 -> "87,3 %"
+// Probabilité 0..1 -> "87,3 %" ; au-delà de 99,95 %, « > 99,9 % » plutôt que « 100 % ».
 export function formatProbability(value) {
   if (isMissing(value)) return "—";
+  if (Number(value) >= 0.9995) return "> 99,9 %";
   return `${percentFormatter.format(Number(value) * 100)} %`;
+}
+
+// Coordonnée GPS -> "14,7167" (virgule décimale, comme dans le formulaire)
+export function formatCoordinate(value) {
+  if (isMissing(value) || Number.isNaN(Number(value))) return "—";
+  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 6 }).format(Number(value));
 }
 
 // Taux déjà exprimé en pourcentage -> "4,2 %"

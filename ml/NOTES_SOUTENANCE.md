@@ -66,27 +66,35 @@ absence de fuite, seuil sur validation, évaluation honnête, intégration API, 
 
 ## 5. « Si le canal de paiement change (Mobile Money, carte…), le score change-t-il ? »
 
-**Non.** Le canal (`channel`) est enregistré avec la transaction et sert à filtrer et à afficher,
-mais il n'est **pas** une variable du modèle : le jeu d'entraînement n'a pas de colonne « canal ».
-On l'a vérifié dans le code : seules les variables listées dans `ml/src/preprocessing.py` sont envoyées au modèle.
+**Le canal choisit le modèle, mais n'est une variable d'aucun modèle.** Depuis le 16/11/2026
+(pull requests #40 et #41), le backend garde un modèle actif par famille :
+- une transaction **Mobile Money avec un type d'opération** est notée par le modèle Mobile Money (mm-v1) ;
+- toutes les autres (carte, paiement en ligne, virement, Mobile Money sans type) par le modèle carte (v2).
 
-Réponse recommandée : l'assumer comme **limite connue**. *« Le dataset disponible ne contient pas
-le canal ; l'ajouter demande des données étiquetées par canal. Le backend stocke déjà le canal :
-dès qu'on dispose de telles données, il suffit de l'ajouter dans `preprocessing.py`, de
-réentraîner avec `training.py` et de réactiver le modèle. »*
+À l'intérieur du modèle carte, le canal n'entre pas dans le calcul : le jeu d'entraînement n'a pas de
+colonne « canal » (seules les variables de `ml/src/preprocessing.py` sont envoyées au modèle). Deux
+transactions carte et paiement en ligne identiques par ailleurs ont donc le même score.
 Ne pas prétendre que le modèle « tient compte du canal » : ce serait faux.
 
-**Mise à jour (deux modèles).** Le canal n'est toujours pas une variable *d'un* modèle, mais il peut
-servir à **choisir le modèle** : une transaction carte est scorée par le modèle carte, une
-transaction Mobile Money par le modèle Mobile Money (`predict.py` sait préparer les deux familles).
-Ce choix se fait côté backend ; tant qu'il n'est pas branché, le backend n'appelle que le modèle
-actif. Ne dire que ce qui est réellement en place le jour de la soutenance.
+## 5 bis. « 36 % est une fraude pour la carte, mais 37 % ne l'est pas en Mobile Money : pourquoi ? »
+
+Chaque modèle a **son propre seuil**, choisi sur la validation pour son objectif de rappel :
+0,0652 pour le modèle carte (85 % de rappel visé), 0,9307 pour le modèle Mobile Money (50 % visé).
+Les scores servent à classer les transactions ; ce ne sont pas des probabilités calibrées, et ils ne se
+comparent pas d'un modèle à l'autre. Depuis le 23/11/2026, le seuil est enregistré avec chaque
+prédiction et affiché à côté du score (fiche transaction et page Alertes).
 
 ## 6. « Pourquoi XGBoost ? »
 
 Trois modèles ont été comparés (régression logistique, Random Forest, XGBoost), tous avec SMOTE
-dans le pipeline, **sur le jeu de validation** ; le choix se fait sur la PR-AUC en validation.
-Le tableau est dans `ml/reports/comparaison_modeles.csv`.
+dans le pipeline, **sur le jeu de validation** ; le choix se fait sur la PR-AUC en validation :
+**0,869** pour XGBoost, 0,631 pour Random Forest, 0,120 pour la régression logistique
+(`ml/reports/comparaison_modeles.csv`, graphique `ml/reports/choix_modele_pr_auc_validation.png`).
+
+Deux réserves à dire avant qu'on les relève : seul XGBoost a été optimisé (les deux autres sont des
+références), et la comparaison a été faite **avec** la variable genre. Le modèle livré a été réentraîné
+**sans** : d'où 63,3 % de précision au test dans le tableau de comparaison, contre 60,7 % pour le modèle
+livré (rappel 86,9 %, seuil 0,0652).
 
 ## 7. Modèle Mobile Money (PaySim) — réponses préparées
 
@@ -126,7 +134,7 @@ retenu par l'équipe est celui à **50 % de rappel : 0,9307** (point initial à 
 comparaison). Le test est utilisé une seule fois, avec des intervalles de confiance à 95 %.
 
 **« Quels sont les résultats ? »** Sur le test (1 272 524 transactions dont 1 643 fraudes), seuil 0,9307 :
-rappel **47,1 %** (IC 95 % : 44,7 – 49,6 %), précision **12,5 %**, F1 0,197, AUC-ROC 0,882 sur Transfert +
+rappel **47,1 %** (IC 95 % : 44,7 – 49,6 %), précision **12,4 %**, F1 0,197, AUC-ROC 0,882 sur Transfert +
 Retrait (0,949 sur toutes opérations). Soit 774 fraudes trouvées sur 1 643, 5 444 fausses alertes : environ
 7 alertes pour une vraie fraude. À dire clairement : on rate plus d'une fraude sur deux. Cause : seulement
 trois variables, les soldes étant exclus.
@@ -137,7 +145,7 @@ point dépend du coût d'une fraude manquée et du coût d'une alerte traitée :
 
 **« Votre modèle fait-il mieux qu'une règle simple ? »** Oui. Règle : *Transfert ou Retrait et montant ≥
 59 628* (types et seuil fixés sans le test). Au même rappel (47 %), précision 1,1 % pour la règle contre
-12,5 % pour le modèle, PR-AUC 0,021 contre 0,341 en validation. Détail :
+12,4 % pour le modèle, PR-AUC 0,021 contre 0,341 en validation. Détail :
 `ml/reports/mobile_money/comparaison_modeles_point_initial_85.csv`.
 
 **« Le modèle ne signale jamais un dépôt, un paiement ou un débit : n'est-ce pas un biais ? »** C'est
@@ -145,7 +153,7 @@ une conséquence directe des données : dans PaySim, la fraude n'apparaît que d
 Retraits (aucune fraude dans 718 804 opérations des trois autres types du jeu de test). Le modèle a
 appris cette règle et ne lève aucune alerte sur ces types ; c'est correct *pour ces données*, mais cela
 ne dit rien sur de vraies transactions. Pour ne pas gonfler les résultats, nous donnons aussi les
-métriques sur Transfert + Retrait seuls : même rappel (47,1 %) et même précision (12,5 %), mais **0,99 %
+métriques sur Transfert + Retrait seuls : même rappel (47,1 %) et même précision (12,4 %), mais **0,99 %
 des opérations légitimes de ces deux types sont signalées**, et l'AUC-ROC est de 0,882 (contre 0,949 sur
 toutes les opérations).
 

@@ -12,7 +12,7 @@ import {
 } from "../constants/choices";
 import { CARD_CLASS, INPUT_CLASS, LABEL_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON } from "../constants/ui";
 import { apiErrorMessage, formatTransactionAmount, toDateTimeLocal } from "../utils/format";
-import { scoringInfo } from "../utils/transaction";
+import { presetDate, scoringInfo } from "../utils/transaction";
 
 function newTransactionId() {
   return `TXN-${Date.now().toString().slice(-8)}`;
@@ -209,7 +209,7 @@ export default function NewTransactionPage() {
 
   function applyPreset(name) {
     const preset = PRESETS[name];
-    setForm({ ...emptyForm(), ...preset, timestamp: toDateTimeLocal(preset.timestamp) });
+    setForm({ ...emptyForm(), ...preset, timestamp: toDateTimeLocal(presetDate(preset.timestamp)) });
     setResult(null);
     setError(null);
   }

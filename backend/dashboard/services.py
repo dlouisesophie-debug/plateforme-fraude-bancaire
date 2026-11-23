@@ -15,6 +15,10 @@ from fraud_detection.models import MLModel
 from transactions.models import Transaction
 
 
+# Montant saisi dans l'unité du simulateur PaySim (modèle mobile money), pas en FCFA.
+EN_UNITE_SIMULATEUR = Q(channel=Transaction.Channel.MOBILE_MONEY) & ~Q(operation_type="")
+
+
 def filtrer_transactions(date_after=None, date_before=None, channel=None):
     """Transactions de la période (bornes incluses) et du canal demandés."""
     qs = Transaction.objects.all()
@@ -94,9 +98,11 @@ def calculer_statistiques(date_after=None, date_before=None, channel=None):
     }
     nb_fraudes = par_statut_brut.get(Transaction.Status.FRAUDULENT, 0)
 
-    montant_a_risque = qs.filter(
-        status__in=[Transaction.Status.FRAUDULENT, Transaction.Status.UNDER_REVIEW]
-    ).aggregate(s=Sum("amount"))["s"] or 0
+    # Les montants mobile money notés par le modèle PaySim (type d'opération renseigné)
+    # sont dans l'unité du simulateur, pas en FCFA : ils ne s'additionnent pas aux autres.
+    a_risque = qs.filter(status__in=[Transaction.Status.FRAUDULENT, Transaction.Status.UNDER_REVIEW])
+    montant_a_risque = a_risque.exclude(EN_UNITE_SIMULATEUR).aggregate(s=Sum("amount"))["s"] or 0
+    a_risque_hors_fcfa = a_risque.filter(EN_UNITE_SIMULATEUR).count()
 
     alertes_actives = Alert.objects.filter(
         status=Alert.Status.OPEN, prediction__transaction__in=qs,
@@ -112,7 +118,8 @@ def calculer_statistiques(date_after=None, date_before=None, channel=None):
         for ligne in qs.values("channel").annotate(
             total=Count("id"),
             fraudulent=Count("id", filter=Q(status=Transaction.Status.FRAUDULENT)),
-            amount=Sum("amount"),
+            amount=Sum("amount", filter=~EN_UNITE_SIMULATEUR),
+            hors_fcfa=Count("id", filter=EN_UNITE_SIMULATEUR),
         )
     }
     par_canal = [
@@ -122,6 +129,8 @@ def calculer_statistiques(date_after=None, date_before=None, channel=None):
             "total": canaux.get(valeur, {}).get("total", 0),
             "fraudulent": canaux.get(valeur, {}).get("fraudulent", 0),
             "amount": float(canaux.get(valeur, {}).get("amount") or 0),
+            # Opérations exclues de "amount" (montant en unité du simulateur PaySim).
+            "amount_excluded_count": canaux.get(valeur, {}).get("hors_fcfa", 0),
         }
         for valeur, libelle in Transaction.Channel.choices
     ]
@@ -154,6 +163,7 @@ def calculer_statistiques(date_after=None, date_before=None, channel=None):
             "fraudulent_transactions": nb_fraudes,
             "fraud_rate": round(nb_fraudes / total * 100, 2) if total else 0.0,
             "amount_at_risk": float(montant_a_risque),
+            "amount_at_risk_excluded_count": a_risque_hors_fcfa,
             "active_alerts": alertes_actives,
         },
         "by_status": par_statut,

@@ -106,6 +106,7 @@ function serializeTransaction(t) {
   return {
     ...t,
     is_fraud_predicted: t.fraud_probability === null ? null : t.fraud_probability >= DECISION_THRESHOLD,
+    decision_threshold: t.fraud_probability === null ? null : DECISION_THRESHOLD,
     alert_id: alert?.id ?? null,
     alert_status: alert?.status ?? null,
   };
@@ -120,6 +121,7 @@ function serializeAlert(a) {
     channel: t.channel,
     timestamp: t.timestamp,
     fraud_probability: t.fraud_probability,
+    decision_threshold: DECISION_THRESHOLD,
   };
 }
 

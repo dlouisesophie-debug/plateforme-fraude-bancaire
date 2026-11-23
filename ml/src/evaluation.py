@@ -107,30 +107,40 @@ def plot_confusion_matrix(y_true, y_proba, seuil: float, chemin_png: str,
     matplotlib.use("Agg")  # pas d'ecran necessaire (serveur, CI)
     import matplotlib.pyplot as plt
 
+    from matplotlib.ticker import FuncFormatter
+
     y_true = np.asarray(y_true).ravel()
     y_pred = (np.asarray(y_proba) >= seuil).astype(int)
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     cm_pct = cm / cm.sum(axis=1, keepdims=True) * 100
-    etiquettes = ["Legitime", "Fraude"]
+    etiquettes = ["Légitime", "Fraude"]
+
+    # Écriture française : espace pour les milliers, virgule décimale.
+    def effectif(v):
+        return f"{v:,.0f}".replace(",", "\u00a0")
+
+    def pourcentage(v):
+        return f"{v:.1f} %".replace(".", ",")
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.6))
     for ax, donnees, fmt, sous_titre in (
-        (axes[0], cm, "{:,}", "Effectifs"),
-        (axes[1], cm_pct, "{:.1f} %", "% par classe reelle"),
+        (axes[0], cm, effectif, "Effectifs"),
+        (axes[1], cm_pct, pourcentage, "% par classe réelle"),
     ):
         im = ax.imshow(donnees, cmap="Blues")
         ax.set_xticks([0, 1], labels=etiquettes)
         ax.set_yticks([0, 1], labels=etiquettes)
-        ax.set_xlabel("Classe predite")
-        ax.set_ylabel("Classe reelle")
+        ax.set_xlabel("Classe prédite")
+        ax.set_ylabel("Classe réelle")
         ax.set_title(sous_titre)
         seuil_couleur = donnees.max() / 2
         for i in range(2):
             for j in range(2):
-                ax.text(j, i, fmt.format(donnees[i, j]).replace(",", " "), ha="center", va="center",
+                ax.text(j, i, fmt(donnees[i, j]), ha="center", va="center",
                         color="white" if donnees[i, j] > seuil_couleur else "black", fontsize=12)
-        fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    fig.suptitle(f"{titre} — seuil = {seuil:.4f}")
+        barre = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        barre.ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: effectif(v)))
+    fig.suptitle(f"{titre} — seuil = {seuil:.4f}".replace(".", ","))
     fig.tight_layout()
     fig.savefig(chemin_png, dpi=150)
     plt.close(fig)
