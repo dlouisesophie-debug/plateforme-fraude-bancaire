@@ -14,7 +14,7 @@ Chaque app correspond à un module du diagramme de packages corrigé :
 | `alerts/` | Modèle Alert, traitement des alertes (confirmer, rejeter, annoter) |
 | `dashboard/` | Indicateurs du tableau de bord (`/api/dashboard/stats/`) |
 | `reports/` | Modèle Report, génération réelle des fichiers PDF/CSV |
-| `audit/` | Modèle AuditLog : connexions, gestion des utilisateurs, écritures sur l'API |
+| `audit/` | Modèle AuditLog : connexions, gestion des utilisateurs, écritures sur l'API, lectures sensibles |
 
 ## Démarrage local (sans Docker)
 
@@ -67,7 +67,7 @@ Documentation interactive complète : `/api/docs/` (Swagger).
 | POST | `/api/transactions/` | agent, admin | Saisie : scoring ML immédiat, la réponse contient le score |
 | GET | `/api/transactions/{id}/` | connecté | Détail |
 | PATCH | `/api/transactions/{id}/` | analyste, admin | `{status}` uniquement (requalification) |
-| DELETE | `/api/transactions/{id}/` | admin | Suppression |
+| DELETE | `/api/transactions/{id}/` | — | Refusé (405) : supprimer une transaction effacerait sa prédiction et son alerte |
 | GET | `/api/transactions/export/` | connecté | Export CSV (mêmes filtres que la liste) |
 
 Filtres de la liste et de l'export : `status`, `channel`, `date_after`,
@@ -76,8 +76,9 @@ commerçant, lieu, ville), `ordering` (`timestamp`, `amount`,
 `prediction__fraud_probability`, préfixe `-` pour décroissant).
 
 Champs ajoutés à chaque transaction : `fraud_probability` (0 à 1, `null` si
-non scorée), `is_fraud_predicted`, `model_version`, `alert_id`,
-`alert_status`, `status_label`, `channel_label`.
+non scorée), `is_fraud_predicted`, `model_version`, `decision_threshold`
+(seuil du modèle qui a produit le score), `alert_id`, `alert_status`,
+`status_label`, `channel_label`.
 
 Statut après scoring : `legitimate` si le score est sous le seuil,
 `under_review` + alerte sinon. `pending` = transaction non scorée (aucun
@@ -100,6 +101,12 @@ modèle actif).
 (vrais/faux positifs/négatifs, précision, rappel en production) et
 `active_model` (version et métriques du modèle actif).
 
+Montants : `amount_at_risk` et `by_channel[].amount` sont en FCFA. Les
+opérations mobile money notées par le modèle PaySim (type d'opération
+renseigné, montant dans l'unité du simulateur) n'y sont pas additionnées ;
+leur nombre est donné par `amount_at_risk_excluded_count` et
+`by_channel[].amount_excluded_count`.
+
 ### Rapports
 
 | Méthode | URL | Rôle | Description |
@@ -114,7 +121,9 @@ modèle actif).
 - `/api/fraud-detection/models/` (admin) : modèles ML, version, métriques.
 - `/api/fraud-detection/predictions/` (connecté) : prédictions.
 - `/api/audit/?action=&user=` (admin) : journal d'audit (`LOGIN_SUCCESS`,
-  `LOGIN_FAILED`, `USER_CREATED`, `USER_UPDATED`, `USER_DELETED`, écritures API).
+  `LOGIN_FAILED`, `USER_CREATED`, `USER_UPDATED`, `USER_DELETED`, écritures API,
+  et lectures sensibles : fiche d'une transaction, export CSV, téléchargement
+  d'un rapport).
 
 ## Variables d'environnement utiles
 

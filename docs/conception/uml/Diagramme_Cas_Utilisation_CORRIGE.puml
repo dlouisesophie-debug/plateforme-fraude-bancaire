@@ -1,5 +1,8 @@
 @startuml
+!include charte.iuml
 ' Mis à jour le 19/11/2026 : suspension temporaire du paiement, second modèle (mobile money), journal d'audit.
+' Corrigé le 23/11/2026 : sens de l'extend, include supprimé, tableau de bord et requalification ajoutés,
+' l'administrateur hérite de l'analyste et de l'agent (il a accès à toutes les pages).
 !pragma layout smetana
 left to right direction
 
@@ -10,6 +13,7 @@ actor "Système ML" as ML <<secondary>>
 
 rectangle "XelWóor — plateforme de détection de la fraude aux paiements" {
   usecase "Se connecter\n(JWT)" as UC1
+  usecase "Consulter le tableau de bord\n(indicateurs, filtres)" as UC15
   usecase "Gérer les utilisateurs\net les rôles" as UC2
   usecase "Superviser les modèles ML\n(carte et mobile money)" as UC3
   usecase "Consulter tous\nles rapports" as UC4
@@ -18,7 +22,8 @@ rectangle "XelWóor — plateforme de détection de la fraude aux paiements" {
   usecase "Consulter les alertes\n(paiements suspendus)" as UC5
   usecase "Examiner une transaction\nscorée" as UC6
   usecase "Statuer sur une fraude :\nconfirmer (paiement refusé)\nou rejeter (paiement libéré)" as UC7
-  usecase "Annoter une transaction" as UC8
+  usecase "Annoter une alerte" as UC8
+  usecase "Requalifier le statut\nd'une transaction" as UC16
 
   usecase "Saisir/consulter une transaction\n(carte, en ligne, virement,\nmobile money)" as UC9
   usecase "Consulter l'historique\ndes transactions" as UC10
@@ -28,6 +33,8 @@ rectangle "XelWóor — plateforme de détection de la fraude aux paiements" {
   usecase "Déclencher une alerte\net suspendre le paiement" as UC13
 }
 
+Admin --|> Analyst
+Admin --|> Agent
 Admin --> UC1
 Admin --> UC2
 Admin --> UC3
@@ -35,12 +42,15 @@ Admin --> UC4
 Admin --> UC14
 
 Analyst --> UC1
+Analyst --> UC15
+Analyst --> UC16
 Analyst --> UC5
 Analyst --> UC6
 Analyst --> UC7
 Analyst --> UC8
 
 Agent --> UC1
+Agent --> UC15
 Agent --> UC9
 Agent --> UC10
 Agent --> UC11
@@ -49,6 +59,5 @@ ML --> UC12
 ML --> UC13
 
 UC9 ..> UC12 : <<include>>
-UC12 ..> UC13 : <<extend>>\n(si fraude prédite :\nscore ≥ seuil du modèle)
-UC13 ..> UC5 : <<include>>
+UC13 ..> UC12 : <<extend>>\n(si fraude prédite :\nscore ≥ seuil du modèle)
 @enduml
