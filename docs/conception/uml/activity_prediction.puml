@@ -1,0 +1,42 @@
+@startuml
+!include charte.iuml
+' Mis à jour le 19/11/2026 d'après fraud_detection/services.py : choix du modèle, suspension, décision.
+start
+:L'agent saisit la transaction;
+:Validation des champs par l'API;
+:Enregistrement de la transaction
+(statut « en attente »);
+if (Mobile money avec un type d'opération ?) then (oui)
+  :Modèle mobile money actif
+  (type d'opération, montant, heure);
+else (non)
+  :Modèle carte actif
+  (carte, paiement en ligne, virement);
+endif
+:Probabilité de fraude;
+if (Probabilité ≥ seuil du modèle ?) then (oui : fraude prédite)
+  :Créer une alerte
+  (gravité selon le score);
+  :Paiement suspendu
+  (statut « en cours d'examen »);
+  :L'analyste examine l'alerte;
+  if (Fraude confirmée ?) then (oui)
+    :Paiement refusé
+    (statut « frauduleuse »);
+  else (non)
+    :Paiement libéré
+    (statut « légitime »);
+  endif
+else (non : non fraude)
+  :Paiement accepté
+  (statut « légitime »);
+endif
+:Journal d'audit et tableau de bord à jour;
+stop
+note right
+  Sans modèle mobile money actif,
+  le modèle carte prend le relais.
+  Si le scoring échoue, la transaction
+  reste « en attente », non scorée.
+end note
+@enduml

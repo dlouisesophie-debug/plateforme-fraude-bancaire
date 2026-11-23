@@ -72,6 +72,21 @@ class DashboardStatsTests(APITestCase):
         self.assertEqual(jours["2026-10-02"]["flagged"], 2)
         self.assertEqual(jours["2026-10-03"]["fraudulent"], 1)
 
+    def test_montants_mobile_money_en_unite_simulateur_exclus_du_fcfa(self):
+        # Opération notée par le modèle PaySim : montant dans l'unité du simulateur.
+        t = Transaction.objects.create(
+            transaction_id="T8", amount=9_000_000, channel="mobile_money", operation_type="transfer",
+            status="under_review", timestamp=datetime(2026, 10, 3, 12, 0, tzinfo=timezone.utc),
+        )
+        Prediction.objects.create(transaction=t, ml_model=self.modele, prediction=True, fraud_probability=0.97)
+        data = self.client.get(URL).json()
+        self.assertEqual(data["kpis"]["amount_at_risk"], 500_000 + 400_000 + 250_000)
+        self.assertEqual(data["kpis"]["amount_at_risk_excluded_count"], 1)
+        mm = {c["channel"]: c for c in data["by_channel"]}["mobile_money"]
+        self.assertEqual(mm["total"], 2)
+        self.assertEqual(mm["amount"], 20_000)  # T2, sans type d'opération : FCFA
+        self.assertEqual(mm["amount_excluded_count"], 1)
+
     def test_matrice_de_confusion(self):
         m = self.client.get(URL).json()["confusion_matrix"]
         self.assertEqual(

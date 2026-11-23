@@ -70,6 +70,7 @@ function normalizeStats(data) {
     total,
     fraudRate: kpis.fraud_rate ?? (total > 0 ? (fraudulent / total) * 100 : 0),
     amountAtRisk: kpis.amount_at_risk ?? 0,
+    amountAtRiskExcluded: Number(kpis.amount_at_risk_excluded_count ?? 0),
     openAlerts: kpis.active_alerts ?? 0,
     byStatus,
     daily: (data.daily || []).map((d) => ({
@@ -103,7 +104,6 @@ function ChartCard({ title, subtitle, children, empty }) {
 function ConfusionMatrix({ confusion }) {
   const { tp, fp, tn, fn } = confusion;
   const precision = tp + fp > 0 ? (tp / (tp + fp)) * 100 : null;
-  const recall = tp + fn > 0 ? (tp / (tp + fn)) * 100 : null;
   const cell = (value, label, good) => (
     <div className={`rounded-xl p-4 text-center ${good ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
       <p className="text-2xl font-semibold tabular-nums">{formatNumber(value)}</p>
@@ -114,7 +114,12 @@ function ConfusionMatrix({ confusion }) {
   return (
     <section className={CARD_CLASS}>
       <h2 className="text-sm font-medium text-ink-primary">Matrice de confusion</h2>
-      <p className="mt-0.5 text-xs text-ink-secondary">Prédictions du modèle comparées aux décisions des analystes</p>
+      {/* Seules les transactions signalées passent par un analyste : les autres sont classées
+          « légitimes » automatiquement. Les vrais négatifs ne sont donc pas des décisions humaines. */}
+      <p className="mt-0.5 text-xs text-ink-secondary">
+        Prédiction du modèle comparée au statut final : décision de l'analyste pour les alertes, statut
+        « légitime » automatique pour les autres transactions (sauf requalification)
+      </p>
       <div className="mt-4 grid grid-cols-[auto_1fr_1fr] items-center gap-2 text-xs text-ink-secondary">
         <span />
         <span className="text-center font-medium">Prédit : fraude</span>
@@ -131,11 +136,12 @@ function ConfusionMatrix({ confusion }) {
           <dt className="text-ink-secondary">Précision</dt>
           <dd className="font-medium text-ink-primary">{precision === null ? "—" : formatPercent(precision)}</dd>
         </div>
-        <div className="flex gap-2">
-          <dt className="text-ink-secondary">Rappel</dt>
-          <dd className="font-medium text-ink-primary">{recall === null ? "—" : formatPercent(recall)}</dd>
-        </div>
       </dl>
+      {/* Le rappel n'est pas affiché : une fraude manquée n'apparaît ici que si quelqu'un requalifie la
+          transaction, le chiffre serait donc trompeur. Les performances se mesurent sur le jeu de test. */}
+      <p className="mt-2 text-xs text-ink-secondary">
+        Rappel non mesurable ici : une fraude non signalée n'apparaît que si la transaction est requalifiée.
+      </p>
     </section>
   );
 }
@@ -178,7 +184,7 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-semibold text-ink-primary">Dashboard</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink-primary">Tableau de bord</h1>
         <div className="flex flex-wrap items-center gap-3">
           <select value={channel} onChange={(e) => setChannel(e.target.value)} aria-label="Canal" className={SELECT_CLASS}>
             <option value="">Tous les canaux</option>
@@ -201,7 +207,15 @@ export default function DashboardPage() {
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="Volume total" value={formatNumber(stats.total)} />
             <StatTile label="Taux de fraude" value={formatPercent(stats.fraudRate)} />
-            <StatTile label="Montant à risque" value={formatAmount(stats.amountAtRisk)} />
+            <StatTile
+              label="Montant à risque"
+              value={formatAmount(stats.amountAtRisk)}
+              hint={
+                stats.amountAtRiskExcluded > 0
+                  ? `Hors ${formatNumber(stats.amountAtRiskExcluded)} opération(s) mobile money en unité du simulateur`
+                  : undefined
+              }
+            />
             <StatTile label="Alertes ouvertes" value={formatNumber(stats.openAlerts)} />
           </div>
 

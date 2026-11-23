@@ -1,0 +1,24 @@
+@startuml
+!include charte.iuml
+' Mis à jour le 19/11/2026 d'après docker-compose.yml, les Dockerfiles et render.yaml.
+!pragma layout smetana
+node "Navigateur web" {
+  component "Application React" as AppReact
+}
+
+cloud "Render (ou serveurs de l'établissement)" {
+  node "Conteneur frontend\n(Nginx 1.27)" {
+    component "Build React" as Build
+  }
+  node "Conteneur backend\n(Python 3.12, Gunicorn)" {
+    component "API Django REST" as API
+    component "Modèles ML (.joblib)\ncarte et mobile money" as Modeles
+  }
+  database "PostgreSQL 16" as DB
+}
+
+AppReact --> Build : HTTPS
+AppReact --> API : HTTPS / JSON
+API --> Modeles
+API --> DB
+@enduml

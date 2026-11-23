@@ -58,14 +58,28 @@ class Command(BaseCommand):
         )
 
     @staticmethod
-    def _famille_du_fichier(chemin_absolu):
+    def _lire_fichier(chemin_absolu):
+        """
+        Famille et date d'entrainement enregistrees dans le pipeline. La date vient de
+        metriques["date_entrainement"] (ecrite par ml/src/training*.py) ; None si absente ou
+        illisible.
+        """
         from predict import load_pipeline  # ml/src, ajoute au chemin par fraud_detection/apps.py
 
         pipeline = load_pipeline(chemin_absolu)
-        famille = pipeline.get("famille", MLModel.Famille.CARTE) if isinstance(pipeline, dict) else MLModel.Famille.CARTE
-        if famille not in MLModel.Famille.values:
-            raise CommandError(f"Famille inconnue dans le fichier : {famille!r} (attendu : {MLModel.Famille.values}).")
-        return famille
+        if not isinstance(pipeline, dict):
+            return MLModel.Famille.CARTE, None
+        famille = pipeline.get("famille", MLModel.Famille.CARTE)
+        date_entrainement = None
+        texte = (pipeline.get("metriques") or {}).get("date_entrainement")
+        if texte:
+            try:
+                date_entrainement = datetime.fromisoformat(str(texte))
+            except ValueError:
+                date_entrainement = None
+            if date_entrainement is not None and date_entrainement.tzinfo is None:
+                date_entrainement = date_entrainement.replace(tzinfo=timezone.utc)
+        return famille, date_entrainement
 
     def handle(self, *args, **options):
         chemin_joblib = options["chemin_joblib"]
@@ -80,7 +94,10 @@ class Command(BaseCommand):
             raise CommandError(f"Fichier introuvable : {chemin_absolu}")
 
         version = options["modele_version"] or datetime.now(timezone.utc).strftime("v%Y%m%d-%H%M%S")
-        famille = options["famille"] or self._famille_du_fichier(chemin_absolu)
+        famille_du_fichier, date_entrainement = self._lire_fichier(chemin_absolu)
+        famille = options["famille"] or famille_du_fichier
+        if famille not in MLModel.Famille.values:
+            raise CommandError(f"Famille inconnue dans le fichier : {famille!r} (attendu : {MLModel.Famille.values}).")
 
         # Un seul modele actif par famille (contrainte DB) : on desactive
         # l'ancien de la meme famille avant de creer/activer le nouveau.
@@ -95,7 +112,8 @@ class Command(BaseCommand):
                 "recall_score": options["recall"],
                 "f1_score": options["f1"],
                 "auc_roc": options["auc"],
-                "trained_at": datetime.now(timezone.utc),
+                # Vraie date d'entrainement si le fichier la contient ; sinon, date d'activation.
+                "trained_at": date_entrainement or datetime.now(timezone.utc),
                 "is_active": True,
                 "artifact_path": chemin_joblib,
             },
@@ -106,3 +124,9 @@ class Command(BaseCommand):
             f"Modele ML {action} : {modele.algorithm} {modele.version}, famille {modele.famille} "
             f"(artifact_path={modele.artifact_path})"
         ))
+        if date_entrainement:
+            self.stdout.write(f"Date d'entrainement lue dans le fichier : {date_entrainement.isoformat()}")
+        else:
+            self.stdout.write(self.style.WARNING(
+                "Date d'entrainement absente du fichier : la date d'activation est enregistree a la place."
+            ))

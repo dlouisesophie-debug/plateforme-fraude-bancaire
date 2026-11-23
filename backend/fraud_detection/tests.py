@@ -134,6 +134,31 @@ class CommandeActiverModeleTests(TestCase):
             call_command("activer_modele_ml", "inexistant.joblib", stdout=StringIO())
         self.assertFalse(MLModel.objects.exists())
 
+    def test_date_d_entrainement_lue_dans_le_fichier(self):
+        # « Entraîné le » : la date écrite par l'entraînement, pas celle de l'activation
+        # (au démarrage d'un conteneur Docker, la commande est relancée).
+        from predict import load_pipeline
+
+        pipeline = load_pipeline(os.path.join(settings.ML_MODELS_DIR, PIPELINE_FILE))
+        attendue = datetime.fromisoformat(pipeline["metriques"]["date_entrainement"])
+        self.lancer("--modele-version", "1")
+        self.lancer("--modele-version", "1")  # réactivation : la date ne bouge pas
+        self.assertEqual(MLModel.objects.get(version="1").trained_at, attendue)
+
+    def test_sans_date_dans_le_fichier_date_d_activation(self):
+        import tempfile
+
+        import joblib
+
+        with tempfile.TemporaryDirectory() as dossier:
+            chemin = os.path.join(dossier, "sans_date.joblib")
+            joblib.dump({"famille": "carte"}, chemin)
+            avant = datetime.now(timezone.utc)
+            sortie = StringIO()
+            call_command("activer_modele_ml", chemin, "--modele-version", "sans-date", stdout=sortie)
+        self.assertGreaterEqual(MLModel.objects.get(version="sans-date").trained_at, avant)
+        self.assertIn("absente du fichier", sortie.getvalue())
+
 
 class PermissionsAdminTests(TestCase):
     """IsAdmin accepte le role admin ET le superuser ; refuse les autres."""
@@ -181,6 +206,26 @@ class ScoringAvecFauxModeleTests(TestCase):
         self.assertEqual(t.status, Transaction.Status.UNDER_REVIEW)
         self.assertEqual(Alert.objects.get(prediction=prediction).severity, "critical")
 
+    def test_le_seuil_du_modele_est_enregistre_et_expose_par_lapi(self):
+        # Un score n'a de sens qu'avec le seuil du modèle qui l'a produit.
+        from rest_framework.test import APIClient
+        from .testing import SEUIL_TEST, faux_modele
+        t = creer_transaction(TRANSACTION_FRAUDE)
+        with faux_modele(0.95):
+            prediction = services.score_transaction(t)
+        self.assertEqual(prediction.decision_threshold, SEUIL_TEST)
+
+        client = APIClient()
+        client.force_authenticate(User.objects.create_user(
+            username="analyste_seuil", password="x-Motdepasse-1", role="analyst"))
+        reponse = client.get(f"/api/transactions/{t.id}/")
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.data["decision_threshold"], SEUIL_TEST)
+        alerte = Alert.objects.get(prediction=prediction)
+        reponse = client.get(f"/api/alerts/{alerte.id}/")
+        self.assertEqual(reponse.status_code, 200)
+        self.assertEqual(reponse.data["decision_threshold"], SEUIL_TEST)
+
 
 class SeedDemoTests(TestCase):
     def test_sans_modele_actif_la_commande_echoue(self):
@@ -201,6 +246,12 @@ class SeedDemoTests(TestCase):
         self.assertFalse(Transaction.objects.filter(status=Transaction.Status.PENDING).exists())
         self.assertEqual(Prediction.objects.count(), 20)
         self.assertTrue(Alert.objects.exists())
+        from django.utils import timezone as dj_tz
+        self.assertFalse(Transaction.objects.filter(timestamp__gt=dj_tz.now()).exists())
+        # Délais de traitement simulés réalistes : au plus 90 minutes, jamais négatifs.
+        for alerte in Alert.objects.exclude(status=Alert.Status.OPEN):
+            delai = (alerte.resolved_at - alerte.created_at).total_seconds() / 60
+            self.assertTrue(0 <= delai <= 90, f"délai de {delai:.0f} min")
 
     def test_reset_repart_de_zero(self):
         from .testing import activer_faux_modele, faux_modele
@@ -209,6 +260,27 @@ class SeedDemoTests(TestCase):
             call_command("seed_demo", "--nombre", "5", stdout=StringIO())
             call_command("seed_demo", "--nombre", "5", "--reset", stdout=StringIO())
         self.assertEqual(Transaction.objects.filter(transaction_id__startswith="DEMO-").count(), 5)
+
+
+class CommandeMesurerPerformancesTests(TestCase):
+    def test_mesure_sans_rien_conserver_en_base(self):
+        from audit.models import AuditLog
+        from .testing import activer_faux_modele, faux_modele
+        activer_faux_modele()
+        sortie = StringIO()
+        with faux_modele(0.97):
+            call_command("mesurer_performances", "--saisies", "3", "--dashboards", "2", "--volume", "50",
+                         stdout=sortie)
+        self.assertIn("Scoring, 3 saisies", sortie.getvalue())
+        self.assertIn("Tableau de bord, 2 appels sur 54 transactions", sortie.getvalue())
+        self.assertFalse(Transaction.objects.exists())
+        self.assertFalse(Alert.objects.exists())
+        self.assertFalse(AuditLog.objects.exists())
+        self.assertFalse(User.objects.filter(username__startswith="mesure.").exists())
+
+    def test_sans_modele_actif(self):
+        with self.assertRaises(CommandError):
+            call_command("mesurer_performances", stdout=StringIO())
 
 
 class ModeleParFamilleTests(TestCase):

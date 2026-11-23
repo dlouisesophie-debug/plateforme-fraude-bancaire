@@ -45,6 +45,15 @@ class AlertAPITests(APITestCase):
         self.client.force_authenticate(su)
         self.assertEqual(self.client.get(URL).status_code, 200)
 
+    def test_creation_et_suppression_dalerte_interdites(self):
+        """Une alerte ne naît que du scoring et ne peut pas être effacée par l'API."""
+        admin = User.objects.create_user(username="adm", password="x", role="admin")
+        for utilisateur in (self.analyste, admin):
+            self.client.force_authenticate(utilisateur)
+            self.assertEqual(self.client.post(URL, {"comment": "x"}, format="json").status_code, 405)
+            self.assertEqual(self.client.delete(f"{URL}{self.alert.id}/").status_code, 405)
+        self.assertTrue(Alert.objects.filter(pk=self.alert.id).exists())
+
     def test_confirm_marque_la_transaction_frauduleuse(self):
         self.client.force_authenticate(self.analyste)
         reponse = self.client.post(f"{URL}{self.alert.id}/confirm/")

@@ -8,7 +8,7 @@ import Pagination from "../components/Pagination";
 import Notice from "../components/Notice";
 import { ALERT_STATUS_CHOICES, CHANNEL_CHOICES, SEVERITY_CHOICES, labelFor } from "../constants/choices";
 import { INPUT_CLASS, SELECT_CLASS } from "../constants/ui";
-import { apiErrorMessage, formatDateTime, formatDuration, formatTransactionAmount } from "../utils/format";
+import { apiErrorMessage, formatDateTime, formatDuration, formatProbability, formatTransactionAmount } from "../utils/format";
 
 const PAGE_SIZE = 20;
 
@@ -104,6 +104,9 @@ function AlertItem({ alert, now, onUpdated, onError }) {
         <div className="flex items-center gap-2 text-sm text-ink-secondary">
           {/* Une alerte n'est créée que si le modèle a prédit une fraude. */}
           Score <ScoreBadge value={alert.fraud_probability} isFraud />
+          {alert.decision_threshold !== null && alert.decision_threshold !== undefined && (
+            <span className="text-xs">(seuil {formatProbability(alert.decision_threshold)})</span>
+          )}
         </div>
       </div>
 

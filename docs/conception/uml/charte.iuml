@@ -1,0 +1,27 @@
+' Style commun des diagrammes XelWóor, aux couleurs de la charte du mémoire
+' (brun #4A2E1B, brun clair #995932, sable #C19A6B, fonds beige).
+' Inclus par chaque .puml avec : !include charte.iuml
+skinparam defaultFontName Arial
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam ArrowColor #4A2E1B
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #995932
+skinparam classHeaderBackgroundColor #F3E9DD
+skinparam packageBorderColor #4A2E1B
+skinparam componentBorderColor #995932
+skinparam componentBackgroundColor #FFFFFF
+skinparam nodeBorderColor #4A2E1B
+skinparam nodeBackgroundColor #FAF5EF
+skinparam usecaseBorderColor #995932
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam actorBorderColor #4A2E1B
+skinparam activityBorderColor #995932
+skinparam activityBackgroundColor #FFFFFF
+skinparam activityDiamondBorderColor #C19A6B
+skinparam sequenceParticipantBorderColor #995932
+skinparam sequenceParticipantBackgroundColor #FFFFFF
+skinparam sequenceLifeLineBorderColor #C19A6B
+skinparam noteBackgroundColor #FAF5EF
+skinparam noteBorderColor #C19A6B
+skinparam databaseBorderColor #4A2E1B

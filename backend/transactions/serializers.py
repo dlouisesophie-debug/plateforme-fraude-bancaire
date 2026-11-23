@@ -36,6 +36,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     fraud_probability = serializers.SerializerMethodField()
     is_fraud_predicted = serializers.SerializerMethodField()
     model_version = serializers.SerializerMethodField()
+    decision_threshold = serializers.SerializerMethodField()
     alert_id = serializers.SerializerMethodField()
     alert_status = serializers.SerializerMethodField()
     created_by_username = serializers.SerializerMethodField()
@@ -59,6 +60,15 @@ class TransactionSerializer(serializers.ModelSerializer):
     def get_model_version(self, obj):
         prediction = _prediction_de(obj)
         return prediction.ml_model.version if prediction else None
+
+    @extend_schema_field(OpenApiTypes.FLOAT)
+    def get_decision_threshold(self, obj):
+        # Seuil du modèle qui a produit le score : sans lui, 36 % (fraude avec le
+        # modèle carte) et 37 % (non fraude avec le modèle mobile money) se contredisent.
+        prediction = _prediction_de(obj)
+        if prediction is None or prediction.decision_threshold is None:
+            return None
+        return round(prediction.decision_threshold, 4)
 
     @extend_schema_field(OpenApiTypes.INT)
     def get_alert_id(self, obj):

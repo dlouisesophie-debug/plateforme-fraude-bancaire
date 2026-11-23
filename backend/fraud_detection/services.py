@@ -181,6 +181,7 @@ def score_transaction(transaction):
             "ml_model": active_model,
             "fraud_probability": fraud_probability,
             "prediction": is_fraud,
+            "decision_threshold": seuil,
         },
     )
 

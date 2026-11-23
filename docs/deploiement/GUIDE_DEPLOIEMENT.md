@@ -115,5 +115,10 @@ Ne peut être fait que par le propriétaire (`dlouisesophie-debug`) ou un admini
   ou stockage objet.
 - PostgreSQL gratuit limité dans le temps : vérifier la date d'expiration dans le tableau de bord.
 - 512 Mo de RAM : un seul worker Gunicorn (`WEB_CONCURRENCY=1`) ; mesuré ≈ 240 Mo avec le modèle chargé.
-- Le premier scoring après démarrage charge le modèle (≈ 1 s) ; les suivants ≈ 30 ms
-  (exigence CDC < 500 ms).
+- Le premier scoring après démarrage charge le modèle (≈ 1 s) ; les suivants restent bien sous
+  l'exigence CDC de 500 ms. Mesure reproductible : `python manage.py mesurer_performances`
+  (ajouter `--volume 10000` pour charger le tableau de bord) ; rien n'est conservé en base.
+  Mesuré le 23/11/2026 hors Render (2 processeurs, PostgreSQL 16, temps côté serveur) :
+  scoring médiane 23 ms, p95 29 ms ; tableau de bord sur 10 061 transactions médiane 37 ms,
+  p95 46 ms (exigence < 2 s). **À refaire sur Render** (Shell du service backend), dont le
+  processeur de l'offre gratuite est plus lent.

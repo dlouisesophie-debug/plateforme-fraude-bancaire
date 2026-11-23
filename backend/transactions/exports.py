@@ -8,10 +8,26 @@ directement dans Excel en français, accents compris.
 import csv
 
 EN_TETES = [
-    "ID transaction", "Date", "Montant (FCFA)", "Canal", "Type d'opération", "Commerçant",
+    "ID transaction", "Date", "Montant", "Canal", "Type d'opération", "Commerçant",
     "Catégorie", "Ville client", "Région client", "Statut",
-    "Probabilité de fraude (%)", "Prédiction modèle", "Version modèle",
+    "Probabilité de fraude (%)", "Prédiction modèle", "Version modèle", "Unité du montant",
 ]
+
+# Libellés des catégories, identiques à ceux de l'interface (frontend/src/constants/choices.js).
+CATEGORIES = {
+    "achats": "Achats", "achats_en_ligne": "Achats en ligne", "auto_transport": "Auto / Transport",
+    "courses": "Courses", "courses_en_ligne": "Courses en ligne", "divers": "Divers",
+    "divers_en_ligne": "Divers en ligne", "divertissement": "Divertissement",
+    "enfants_animaux": "Enfants / Animaux", "maison": "Maison", "restauration": "Restauration",
+    "sante_sport": "Santé / Sport", "soins_personnels": "Soins personnels", "voyage": "Voyage",
+}
+
+
+def unite_montant(transaction):
+    """Le modèle mobile money lit le montant en unités du simulateur PaySim, pas en FCFA."""
+    if transaction.channel == "mobile_money" and transaction.operation_type:
+        return "unité du simulateur"
+    return "FCFA"
 
 
 def lignes_transactions(queryset):
@@ -27,13 +43,14 @@ def lignes_transactions(queryset):
             t.get_channel_display(),
             t.get_operation_type_display(),
             t.merchant,
-            t.category,
+            CATEGORIES.get(t.category, t.category),
             t.customer_city,
             t.customer_region,
             t.get_status_display(),
             f"{prediction.fraud_probability * 100:.2f}".replace(".", ",") if prediction else "",
             ("Fraude" if prediction.prediction else "Normale") if prediction else "Non scorée",
             prediction.ml_model.version if prediction else "",
+            unite_montant(t),
         ]
 
 

@@ -14,7 +14,14 @@ import {
   labelFor,
 } from "../constants/choices";
 import { CARD_CLASS, PRIMARY_BUTTON, SECONDARY_BUTTON, SELECT_CLASS } from "../constants/ui";
-import { apiErrorMessage, formatDate, formatDateTime, formatNumber, formatTransactionAmount } from "../utils/format";
+import {
+  apiErrorMessage,
+  formatCoordinate,
+  formatDate,
+  formatDateTime,
+  formatNumber,
+  formatTransactionAmount,
+} from "../utils/format";
 import { TRANSACTION_FIELD_GROUPS } from "../utils/transaction";
 
 const REQUALIFY_ROLES = ["admin", "analyst"];
@@ -100,6 +107,11 @@ function formatField(key, value, transaction) {
       return formatDate(value);
     case "customer_city_population":
       return formatNumber(value);
+    case "merchant_latitude":
+    case "merchant_longitude":
+    case "customer_latitude":
+    case "customer_longitude":
+      return formatCoordinate(value);
     case "created_by":
       return transaction.created_by_username || `Utilisateur #${value}`;
     default:
@@ -160,7 +172,15 @@ export default function TransactionDetailPage() {
               {canAccess(user, REQUALIFY_ROLES) && <Requalify transaction={transaction} onUpdated={reload} />}
             </div>
             <div className="space-y-4 lg:col-span-2">
-              {TRANSACTION_FIELD_GROUPS.map((group) => (
+              {TRANSACTION_FIELD_GROUPS.map((group) => ({
+                ...group,
+                // Mobile money (modèle PaySim) : pas de commerçant ni de profil client, on masque les champs vides.
+                fields: transaction.operation_type
+                  ? group.fields.filter(([key]) => !["", null, undefined].includes(transaction[key]))
+                  : group.fields,
+              }))
+                .filter((group) => group.fields.length > 0)
+                .map((group) => (
                 <section key={group.title} className={CARD_CLASS}>
                   <h2 className="text-sm font-medium text-ink-primary">{group.title}</h2>
                   <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">

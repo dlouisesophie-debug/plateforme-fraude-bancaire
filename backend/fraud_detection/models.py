@@ -56,6 +56,13 @@ class Prediction(models.Model):
     ml_model = models.ForeignKey(MLModel, on_delete=models.PROTECT, related_name="predictions")
     fraud_probability = models.FloatField(validators=[MinValueValidator(0), MaxValueValidator(1)])
     prediction = models.BooleanField(help_text="True = frauduleuse")
+    # Seuil du modèle au moment du scoring : chaque famille a le sien (0,0652 carte,
+    # 0,9307 mobile money), un score seul ne dit donc pas si la transaction est suspecte.
+    decision_threshold = models.FloatField(
+        null=True, blank=True, validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Seuil de décision du modèle appliqué à ce score (vide pour les prédictions "
+                  "antérieures à ce champ).",
+    )
     prediction_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:

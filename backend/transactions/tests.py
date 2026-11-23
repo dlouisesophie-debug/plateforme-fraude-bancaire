@@ -151,16 +151,40 @@ class TransactionCorrectionsTests(APITestCase):
         # L'alerte ouverte est clôturée dans le même sens.
         self.assertEqual(Alert.objects.get(prediction__transaction=t).status, Alert.Status.CONFIRMED)
 
+    def test_requalification_legitime_rejette_lalerte_ouverte(self):
+        """Chemin qui libère le paiement : l'alerte ouverte est rejetée."""
+        t_id = self.creer(0.97, transaction_id="T-LEGIT").json()["id"]
+        self.client.force_authenticate(self.analyste)
+        reponse = self.client.patch(f"{URL}{t_id}/", {"status": "legitimate"}, format="json")
+        self.assertEqual(reponse.status_code, 200)
+        t = Transaction.objects.get(pk=t_id)
+        self.assertEqual(t.status, Transaction.Status.LEGITIMATE)
+        alerte = Alert.objects.get(prediction__transaction=t)
+        self.assertEqual(alerte.status, Alert.Status.REJECTED)
+        self.assertIsNotNone(alerte.resolved_at)
+
+    def test_requalification_sans_alerte_ouverte(self):
+        """Transaction normale (pas d'alerte) : seul le statut change."""
+        t_id = self.creer(0.01, transaction_id="T-SANS-ALERTE").json()["id"]
+        self.client.force_authenticate(self.analyste)
+        reponse = self.client.patch(f"{URL}{t_id}/", {"status": "fraudulent"}, format="json")
+        self.assertEqual(reponse.status_code, 200)
+        t = Transaction.objects.get(pk=t_id)
+        self.assertEqual(t.status, Transaction.Status.FRAUDULENT)
+        self.assertFalse(Alert.objects.filter(prediction__transaction=t).exists())
+
     def test_agent_ne_peut_pas_modifier(self):
         t_id = self.creer(0.01).json()["id"]
         self.assertEqual(self.client.patch(f"{URL}{t_id}/", {"status": "fraudulent"}, format="json").status_code, 403)
 
-    def test_suppression_reservee_a_ladmin(self):
-        t_id = self.creer(0.01).json()["id"]
-        self.client.force_authenticate(self.analyste)
-        self.assertEqual(self.client.delete(f"{URL}{t_id}/").status_code, 403)
-        self.client.force_authenticate(self.admin)
-        self.assertEqual(self.client.delete(f"{URL}{t_id}/").status_code, 204)
+    def test_suppression_interdite_meme_a_ladmin(self):
+        # Supprimer une transaction effacerait sa prédiction et son alerte (traçabilité).
+        t_id = self.creer(0.97).json()["id"]
+        for utilisateur in (self.analyste, self.admin):
+            self.client.force_authenticate(utilisateur)
+            self.assertEqual(self.client.delete(f"{URL}{t_id}/").status_code, 405)
+        self.assertTrue(Transaction.objects.filter(pk=t_id).exists())
+        self.assertTrue(Alert.objects.filter(prediction__transaction_id=t_id).exists())
 
     def test_filtre_par_periode_et_recherche(self):
         self.creer(0.01, transaction_id="T-OCT01", timestamp="2026-10-01T10:00:00Z", merchant="Auchan")
