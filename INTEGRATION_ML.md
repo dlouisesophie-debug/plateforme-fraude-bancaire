@@ -62,7 +62,7 @@ Chaque modèle répond fraude / non fraude avec son propre seuil, choisi sur la 
 
 ```bash
 python manage.py activer_modele_ml fraudguard_mobile_money_pipeline.joblib --modele-version mm-v1 \
-    --algorithm xgboost --precision 0.1245 --recall 0.4711 --f1 0.1969 --auc 0.8822
+    --algorithm xgboost --precision 0.124477 --recall 0.471089 --f1 0.196922 --auc 0.882237
 ```
 
 Au démarrage du conteneur, `docker-entrypoint.sh` active les deux modèles (le mobile money
