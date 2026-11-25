@@ -11,7 +11,7 @@
 #
 # Variables optionnelles :
 #   ML_MODEL_FILE    (défaut fraudguard_pipeline.joblib)
-#   ML_MODEL_VERSION (défaut v1)
+#   ML_MODEL_VERSION (défaut v2 : 2e version du modèle carte, entraînée sans la variable genre)
 #   ML_MM_MODEL_FILE    (défaut fraudguard_mobile_money_pipeline.joblib, activé s'il existe)
 #   ML_MM_MODEL_VERSION (défaut mm-v1)
 #   SEED_DEMO        (défaut true ; false pour ne pas créer de données de démo)
@@ -20,7 +20,7 @@ set -e
 
 export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-fraudguard.settings}"
 ML_MODEL_FILE="${ML_MODEL_FILE:-fraudguard_pipeline.joblib}"
-ML_MODEL_VERSION="${ML_MODEL_VERSION:-v1}"
+ML_MODEL_VERSION="${ML_MODEL_VERSION:-v2}"
 ML_MM_MODEL_FILE="${ML_MM_MODEL_FILE:-fraudguard_mobile_money_pipeline.joblib}"
 ML_MM_MODEL_VERSION="${ML_MM_MODEL_VERSION:-mm-v1}"
 

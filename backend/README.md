@@ -24,8 +24,8 @@ source venv/bin/activate          # Windows : venv\Scripts\activate
 pip install -r requirements.txt
 cp ../.env.example ../.env        # si pas déjà fait à la racine
 python manage.py migrate
-python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v1 \
-    --algorithm xgboost --precision 0.782 --recall 0.851 --f1 0.815 --auc 0.9933
+python manage.py activer_modele_ml fraudguard_pipeline.joblib --modele-version v2 \
+    --algorithm xgboost --precision 0.607492 --recall 0.869464 --f1 0.715244 --auc 0.994488
 python manage.py seed_demo --simuler-decisions   # comptes + 40 transactions scorées
 python manage.py runserver
 ```

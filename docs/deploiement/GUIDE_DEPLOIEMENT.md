@@ -43,7 +43,7 @@ Flux :
 5. Render interroge `/api/health/` (application + base) pour décider si le service est prêt.
 
 Démarrage du conteneur backend (`backend/docker-entrypoint.sh`) : attente de la base →
-`migrate` → `activer_modele_ml fraudguard_pipeline.joblib --modele-version v1` →
+`migrate` → `activer_modele_ml fraudguard_pipeline.joblib --modele-version v2` →
 `seed_demo` (une seule fois) → Gunicorn.
 
 ## 2. Mettre le travail dans le dépôt (avec TON compte GitHub)
@@ -86,29 +86,30 @@ ensuite fusionner `develop` → `main`.
      (l'URL est intégrée au moment du build) ;
    - corriger aussi `render.yaml` et le README dans le dépôt.
 
-### Passage aux adresses XelWóor (services créés avant le 23/11/2026)
+### Passage aux adresses XelWóor et nouvelle base (à faire quelques jours avant la soutenance)
 
 Les services web s'appelaient `fraudguard-api` et `fraudguard-web`. Render ne permet pas de
-changer l'adresse `onrender.com` d'un service (renommer un service ne change que son nom
-affiché) : il faut donc créer `xelwoor-api` et `xelwoor-web`. La base `fraudguard-db` est
-gardée telle quelle, avec ses données.
+changer l'adresse `onrender.com` d'un service : il faut créer `xelwoor-api` et `xelwoor-web`.
+La base `fraudguard-db`, créée vers le 20/10, a très probablement expiré (30 jours) : elle est recréée, ce qui
+donne en plus des données de démonstration propres.
 
-1. Après la fusion de `develop` dans `main` : **Blueprints** → le Blueprint du projet →
-   **Manual Sync** (inutile si la synchronisation automatique est active : elle part dès la
-   fusion). Render doit proposer **deux nouveaux services** (`xelwoor-api`, `xelwoor-web`)
-   et aucune nouvelle base. S'il propose une deuxième base, annuler et passer par le cas
-   ci-dessous.
-   - Si les services n'avaient pas été créés par un Blueprint : **New → Web Service**, deux
-     fois, en recopiant les réglages de `render.yaml` (Docker, Dockerfile, contexte, variables
-     d'environnement, connexion à `fraudguard-db`).
-   - Dans `xelwoor-api` → **Environment**, vérifier que `DEMO_PASSWORD` est renseigné (même
-     valeur qu'avant). Les comptes démo existent déjà dans la base : leur mot de passe ne
-     change pas.
-2. Vérifier les adresses obtenues (étape 5 ci-dessus si Render a ajouté un suffixe), puis
-   faire la recette ci-dessous sur les nouvelles adresses.
-3. Supprimer `fraudguard-api` et `fraudguard-web` (**Settings → Delete Web Service**).
-   Retirer un service de `render.yaml` ne le supprime pas : il reste en place, non géré, tant
-   qu'on ne l'a pas supprimé à la main.
+Dès maintenant, sans rien déployer : **Blueprints** → le Blueprint → **Auto Sync : No**, pour
+qu'une fusion dans `main` ne crée pas les services trop tôt.
+
+Le jour choisi (au plus 30 jours avant la soutenance) :
+
+1. Choisir `DEMO_PASSWORD` (jamais dans le dépôt). Il doit être en place avant le premier
+   démarrage de `xelwoor-api` : l'application ne permet pas de changer ensuite le mot de passe
+   d'un compte.
+2. Supprimer l'ancienne base (une seule base gratuite à la fois), puis **Manual Sync** : Render
+   doit proposer `fraudguard-db`, `xelwoor-api` et `xelwoor-web`. Saisir `DEMO_PASSWORD`.
+   - Si les services n'avaient pas été créés par un Blueprint : **New → PostgreSQL** puis
+     **New → Web Service** (deux fois), avec les réglages de `render.yaml`.
+3. Vérifier les journaux de `xelwoor-api` (migrations, `Modele ML cree et active : xgboost v2`,
+   `40 transactions de démo créées`), les adresses (étape 5 ci-dessus si Render a ajouté un
+   suffixe), puis faire la recette ci-dessous.
+4. Supprimer `fraudguard-api` et `fraudguard-web` (**Settings**) : retirer un service de
+   `render.yaml` ne le supprime pas.
 
 ### Recette après déploiement (à faire et noter avant la soutenance)
 
@@ -137,12 +138,17 @@ Ne peut être fait que par le propriétaire (`dlouisesophie-debug`) ou un admini
 - Disque non persistant : les rapports PDF/CSV générés disparaissent au redéploiement
   (les données en base sont conservées). Solution payante : disque Render monté sur `/app/media`,
   ou stockage objet.
-- PostgreSQL gratuit limité dans le temps : vérifier la date d'expiration dans le tableau de bord.
+- PostgreSQL gratuit limité dans le temps : une base gratuite expire 30 jours après sa création,
+  devient inaccessible, puis est supprimée après 14 jours de grâce ; une seule base gratuite à la
+  fois. La créer au plus 30 jours avant la soutenance.
+- Pas de Shell ni de SSH sur un service gratuit : aucune commande `python manage.py …` ne peut
+  être lancée sur Render. Pour repartir de données de démo propres, supprimer la base puis
+  relancer la synchronisation du Blueprint (le démarrage recrée les 40 transactions de démo).
 - 512 Mo de RAM : un seul worker Gunicorn (`WEB_CONCURRENCY=1`) ; mesuré ≈ 240 Mo avec le modèle chargé.
 - Le premier scoring après démarrage charge le modèle (≈ 1 s) ; les suivants restent bien sous
   l'exigence CDC de 500 ms. Mesure reproductible : `python manage.py mesurer_performances`
   (ajouter `--volume 10000` pour charger le tableau de bord) ; rien n'est conservé en base.
   Mesuré le 23/11/2026 hors Render (2 processeurs, PostgreSQL 16, temps côté serveur) :
   scoring médiane 23 ms, p95 29 ms ; tableau de bord sur 10 061 transactions médiane 37 ms,
-  p95 46 ms (exigence < 2 s). **À refaire sur Render** (Shell du service backend), dont le
-  processeur de l'offre gratuite est plus lent.
+  p95 46 ms (exigence < 2 s). Sur Render, sans Shell, mesurer depuis le navigateur (F12, onglet
+  Réseau : durée des requêtes `stats/` et `transactions/`), réseau compris.
